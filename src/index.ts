@@ -1,4 +1,4 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import prisma from "./prisma";
@@ -15,7 +15,15 @@ app.get("/", (req, res) => {
 });
 
 app.use("/*", (req, res) => {
-  res.status(404).send("Not Found");
+  res.status(404).send({
+    message: "Not Found",
+  });
+});
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  res.status(500).send({
+    message: "Internal Server Error",
+  });
 });
 
 app.listen(port, () => {
@@ -27,4 +35,3 @@ process.on("SIGINT", () => {
   console.log("Prisma client disconnected");
   process.exit(0);
 });
-

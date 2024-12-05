@@ -15,20 +15,20 @@ datasource db {
 }
 
 model School {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  email     String   @unique
-  phone     String[]
-  address   String
+  id          String       @id @default(cuid())
+  name        String       @unique
+  email       String       @unique
+  phone       String[]
+  address     String
   userSchools UserSchool[]
-  roles     Role[]
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  roles       Role[]
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model UserSchool {
-  id        String      @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
   schoolId  String
   user      User     @relation(fields: [userId], references: [id])
@@ -40,17 +40,17 @@ model UserSchool {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
-  password  String
-  userSchools UserSchool[]
-  student   Student?
-  staff     Staff?
-  Parent    Parent?
-  isSuperAdmin Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String       @id @default(cuid())
+  email        String       @unique
+  username     String       @unique
+  password     String
+  userSchools  UserSchool[]
+  student      Student?
+  staff        Staff?
+  Parent       Parent?
+  isSuperAdmin Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
 
 model Role {
@@ -65,16 +65,16 @@ model Role {
 }
 
 model Permission {
-  id   String @id @default(cuid())
-  name String @unique
-  roles Role[]
+  id        String   @id @default(cuid())
+  name      String   @unique
+  roles     Role[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Student {
-  id                String    @id @default(cuid())
-  userId            String    @unique
+  id                String   @id @default(cuid())
+  userId            String   @unique
   user              User     @relation(fields: [userId], references: [id])
   admission_number  Int      @unique @default(autoincrement())
   name              String
@@ -103,7 +103,7 @@ model Student {
   added_by          String
   photo_url         String?
   isStudent         Boolean  @default(true)
-  parent            Parent?   @relation(fields: [parentId], references: [id])
+  parent            Parent?  @relation(fields: [parentId], references: [id])
   parentId          String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -140,14 +140,14 @@ model Staff {
 }
 
 model Parent {
-  id          String    @id @default(cuid())
-  userId      String    @unique
-  user        User      @relation(fields: [userId], references: [id])
-  name        String
-  phone       String?
-  email       String?
-  address     String?
-  students    Student[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id])
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  students  Student[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
