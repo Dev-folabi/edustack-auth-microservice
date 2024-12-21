@@ -1,7 +1,9 @@
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
+import api from "./routes/api";
 import prisma from "./prisma";
+
 
 const app = express();
 
@@ -25,6 +27,8 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     message: "Internal Server Error",
   });
 });
+
+app.use("/", api);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

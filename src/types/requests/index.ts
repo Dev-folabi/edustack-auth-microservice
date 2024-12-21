@@ -36,13 +36,14 @@ export interface IPermissionRequest {
 }
 
 // Student Request
-export interface IStudentRequest {
+export interface IStudentRequest extends IUserRequest {
     userId: ID;
+    schoolId: ID;
     name: string;
     gender: Gender;
     dob: string;
     phone?: string;
-    email?: string;
+    email: string;
     address: string;
     admissionDate?: string;
     religion?: string;
@@ -53,29 +54,27 @@ export interface IStudentRequest {
     guardianPhone?: string;
     fatherOccupation?: string;
     motherOccupation?: string;
-    sectionId: ID;
-    sessionId: ID;
     isActive?: boolean;
     city?: string;
     state?: string;
     country?: string;
     routeVehicleId?: ID;
     roomId?: ID;
-    addedBy: ID;
+    addedBy?: ID;
     photoUrl?: string;
     parentId?: ID;
   }
   
 
 // Staff Request
-export interface IStaffRequest {
+export interface IStaffRequest extends IUserRequest {
   userId: ID;
   name: string;
   phone: string[];
-  email?: string;
+  email: string;
   address: string;
   schoolId: ID;
-  roleIds?: ID[];
+  role: string;
   designation?: string;
   dob?: Date;
   salary?: number;
@@ -85,7 +84,6 @@ export interface IStaffRequest {
   isActive?: boolean;
   qualification?: string;
   notes?: string;
-  section_id?: number;
 }
 
 // Parent Request
