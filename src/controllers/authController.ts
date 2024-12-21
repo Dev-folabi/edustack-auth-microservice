@@ -9,6 +9,7 @@ import {
 } from "../types/requests";
 import { generateToken } from "../function/token";
 import { UserRole } from "@prisma/client";
+import { validateSchool } from "../function/schoolFunctions";
 
 // Super Admin Sign Up
 export const superAdminSignUp = async (
@@ -82,14 +83,10 @@ export const staffSignUp = async (
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Validate school existence
-    const school = await prisma.school.findUnique({
-      where: { id: String(schoolId) },
-    });
+    const school = await validateSchool(String(schoolId));
     if (!school) {
-       res
-        .status(404)
-        .json({ success: false, message: "School not found" });
-        return;
+      res.status(404).json({ success: false, message: "School not found" });
+      return;
     }
 
     let newUser!: { id: string };
@@ -102,7 +99,11 @@ export const staffSignUp = async (
 
       // Link user to school
       await tx.userSchool.create({
-        data: { userId: newUser.id, schoolId: school.id, role: { set: [role as UserRole] } },
+        data: {
+          userId: newUser.id,
+          schoolId: school.id,
+          role: { set: [role as UserRole] },
+        },
       });
 
       // Create staff profile
@@ -154,14 +155,15 @@ export const studentSignUp = async (
     const { email, password, username, schoolId, ...studentData } = req.body;
 
     // Validate school existence
-    const school = await prisma.school.findUnique({
-      where: { id: String(schoolId) },
-    });
+    const school = await validateSchool(String(schoolId));
+
     if (!school) {
-       res
-        .status(404)
-        .json({ success: false, message: "School not found" });
-        return;
+      res.status(404).json({ success: false, message: "School not found" });
+      return;
+    }
+    if (!school) {
+      res.status(404).json({ success: false, message: "School not found" });
+      return;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -174,7 +176,7 @@ export const studentSignUp = async (
       });
 
       await tx.userSchool.create({
-        data: { userId: newUser.id, schoolId: school.id, role:["student"] },
+        data: { userId: newUser.id, schoolId: school.id, role: ["student"] },
       });
 
       await tx.student.create({
@@ -225,20 +227,20 @@ export const userSignIn = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-       res.status(404).json({
+      res.status(404).json({
         success: false,
         message: "User not found",
       });
-      return
+      return;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-       res.status(401).json({
+      res.status(401).json({
         success: false,
         message: "Invalid login details",
       });
-      return 
+      return;
     }
 
     const token = generateToken({ id: user.id });
@@ -258,4 +260,3 @@ export const userSignIn = async (req: Request, res: Response) => {
     });
   }
 };
-
