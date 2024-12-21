@@ -1,12 +1,47 @@
-import globals from "globals";
-import pluginJs from "@eslint/js";
+import js from "@eslint/js";
 import tseslint from "typescript-eslint";
+import globals from "globals";
 
-
-/** @type {import('eslint').Linter.Config[]} */
+/** @type {import("eslint").FlatConfig[]} */
 export default [
-  {files: ["**/*.{js,mjs,cjs,ts}"]},
-  {languageOptions: { globals: globals.browser }},
-  pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
+  // Enable ESLint for TypeScript and JavaScript files
+  {
+    files: ["**/*.{js,mjs,cjs,ts}"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        project: "./tsconfig.json", // Points to your TypeScript config
+      },
+      globals: globals.node, // Enable Node.js globals (e.g., process, __dirname)
+    },
+    plugins: {
+      "@typescript-eslint": tseslint.plugin,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...tseslint.configs.recommended.rules,
+      // Custom rules
+      "no-unused-vars": "warn",
+      "no-console": "warn",
+      "no-unused-vars": "error",
+      "semi": ["error", "always"],
+      "strict": ["error", "global"],
+      "no-undef": "error",
+      "no-mixed-spaces-and-tabs": "error",
+      "prefer-const": "warn",
+      "no-trailing-spaces": "warn",
+      "no-use-before-define": "error",
+      "no-unused-expressions": "error",
+      "eqeqeq": "error",
+      "no-else-return": "error",
+      "no-empty-function": "error",
+      "block-scoped-var": "error",
+      "@typescript-eslint/no-empty-interface": "off",
+      "@typescript-eslint/ban-types": "error",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/explicit-function-return-type": "off",
+    },
+  },
 ];
