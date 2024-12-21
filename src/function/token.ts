@@ -3,9 +3,10 @@ import jwt from "jsonwebtoken";
 interface TokenPayload {
   id: string;
 }
+const JWT = process.env.JWT_SECRET_KEY as string
 
 export const generateToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, process.env.JWT_SECRET as string, {
+  return jwt.sign(payload, JWT, {
     expiresIn: "1d",
   });
 };
@@ -14,7 +15,7 @@ export const decodeToken = (token: string): string => {
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
+      JWT 
     ) as TokenPayload;
     return decoded.id;
   } catch (error) {
@@ -36,7 +37,7 @@ export const getIdFromToken = (authHeader?: string): string => {
     const token = parts[1];
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string
+      JWT
     ) as TokenPayload;
     return decoded.id;
   } catch (error : any) {

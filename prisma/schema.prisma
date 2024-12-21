@@ -14,6 +14,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum UserRole {
+  student
+  admin
+  teacher
+  accountant
+  librarian
+  parent
+}
+
 model School {
   id          String       @id @default(cuid())
   name        String       @unique
@@ -21,20 +36,20 @@ model School {
   phone       String[]
   address     String
   userSchools UserSchool[]
-  roles       Role[]
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
 
 model UserSchool {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   userId    String
   schoolId  String
-  user      User     @relation(fields: [userId], references: [id])
-  school    School   @relation(fields: [schoolId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      UserRole[]
+  user      User       @relation(fields: [userId], references: [id])
+  school    School     @relation(fields: [schoolId], references: [id])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   @@unique([userId, schoolId])
 }
@@ -47,29 +62,10 @@ model User {
   userSchools  UserSchool[]
   student      Student?
   staff        Staff?
-  Parent       Parent?
+  parent       Parent?
   isSuperAdmin Boolean      @default(false)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-}
-
-model Role {
-  id          String       @id @default(cuid())
-  name        String       @unique
-  permissions Permission[]
-  schoolId    String
-  school      School       @relation(fields: [schoolId], references: [id])
-  staffs      Staff[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-}
-
-model Permission {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  roles     Role[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Student {
@@ -92,27 +88,19 @@ model Student {
   guardian_phone    String?
   father_occupation String?
   mother_occupation String?
-  section_id        String
-  session_id        String
   isActive          Boolean  @default(true)
   city              String?
   state             String?
   country           String?
   route_vehicle_id  String?
   room_id           String?
-  added_by          String
+  added_by          String?
   photo_url         String?
   isStudent         Boolean  @default(true)
   parent            Parent?  @relation(fields: [parentId], references: [id])
   parentId          String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-}
-
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
 }
 
 model Staff {
@@ -123,8 +111,6 @@ model Staff {
   phone         String[]
   email         String?
   address       String
-  roles         Role[]
-  schoolId      String
   designation   String?
   dob           DateTime?
   salary        Int?
@@ -134,7 +120,6 @@ model Staff {
   isActive      Boolean   @default(true)
   qualification String?
   notes         String?
-  section_id    String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

@@ -2,55 +2,39 @@ import { Request, Response } from "express";
 import prisma from "../prisma";
 import { ISchoolRequest } from "../types/requests";
 import { getIdFromToken } from "../function/token";
+import { validateUserSchool } from "../function/schoolFunctions";
+
+
+// Unified error response helper
+const handleError = (res: Response, message: string, status = 400, data = null) => {
+  res.status(status).json({ success: false, message, data });
+};
 
 // Create a new school
-export const createSchool = async (
-  req: Request<{}, {}, ISchoolRequest>,
-  res: Response
-) => {
+export const createSchool = async (req: Request<{}, {}, ISchoolRequest>, res: Response) => {
   try {
-    const userId = getIdFromToken(req.headers.authorization);
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
 
+    const userId = getIdFromToken(authHeader);
     const { name, email, phone, address } = req.body;
-    const exsitSchool = await prisma.school.findFirst({
-      where: { name },
-    });
-    if (exsitSchool) {
-      res.status(400).json({ error: "School already exists" });
-      return;
-    }
 
-    const schoolList = await prisma.userSchool.findMany({
-      where: { userId },
-    });
+    // Check if the school already exists
+    const existingSchool = await prisma.school.findFirst({ where: { name } });
+    if (existingSchool) return handleError(res, "School already exists", 400);
 
-    if (schoolList.length >= 3) {
-      res.status(400).json({ error: "School Limit of 3 Reached" });
-      return;
-    }
+    // Check user school limit
+    const schoolList = await prisma.userSchool.findMany();
+    if (schoolList.length >= 3) return handleError(res, "School limit of 3 reached", 400);
 
+    // Create school
     const school = await prisma.school.create({
-      data: {
-        name,
-        email,
-        phone,
-        address,
-      },
+      data: { name, email, phone, address },
     });
 
-    if (!school) {
-      res.status(400).json({
-        success: false,
-        message: "Unable to create school",
-      });
-      return;
-    }
-
+    // Link school to user
     await prisma.userSchool.create({
-      data: {
-        userId,
-        schoolId: school.id,
-      },
+      data: { userId, schoolId: school.id },
     });
 
     res.status(201).json({
@@ -59,88 +43,63 @@ export const createSchool = async (
       data: school,
     });
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: "Failed to create school",
-      data: error || error.message,
-    });
+    console.error("Error in createSchool:", error);
+    handleError(res, "Failed to create school", 500, error.message);
   }
 };
 
 // Get all schools
 export const getAllSchools = async (req: Request, res: Response) => {
   try {
-    const userId = getIdFromToken(req.headers.authorization);
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
+
+    const userId = getIdFromToken(authHeader);
 
     const schools = await prisma.school.findMany({
       where: {
-        userSchools: {
-          some: { userId },
-        },
+        userSchools: { some: { userId } },
       },
     });
-    if (schools.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: "No schools found",
-      });
-      return;
+
+    if (!schools.length) {
+      return handleError(res, "No schools found", 404);
     }
+
     res.status(200).json({
       success: true,
       message: "Schools fetched successfully",
       data: schools,
     });
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: "Failed to fetch schools",
-      data: error || error.message,
-    });
+    console.error("Error in getAllSchools:", error);
+    handleError(res, "Failed to fetch schools", 500, error.message);
   }
 };
 
 // Get school by id
-export const getSchool = async (
-  req: Request<{ id: string }>,
-  res: Response
-) => {
+export const getSchool = async (req: Request<{ id: string }>, res: Response) => {
   try {
-    const userId = getIdFromToken(req.headers.authorization);
-    const { id } = req.params;
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
 
-    const userSchool = await prisma.userSchool.findUnique({
-      where: { userId_schoolId: { userId, schoolId: id } },
-    });
+    const userId = getIdFromToken(authHeader);
+    const { id: schoolId } = req.params;
 
-    if (!userSchool) {
-      res.status(404).json({
-        success: false,
-        message: "School with this user not found",
-      });
-      return;
-    }
-    const school = await prisma.school.findUnique({
-      where: { id },
-    });
-    if (!school) {
-      res.status(404).json({
-        success: false,
-        message: "Unable to fetch school",
-      });
-      return;
-    }
+    const userSchool = await validateUserSchool(userId, schoolId);
+    if (!userSchool) return handleError(res, "School with this user not found", 404);
+
+    const school = await prisma.school.findUnique({ where: { id: schoolId } });
+    if (!school) return handleError(res, "School not found", 404);
+
     res.status(200).json({
-      status: true,
+      success: true,
       message: "School fetched successfully",
       data: school,
     });
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: "Failed to fetch school",
-      data: error || error.message,
-    });
+    console.error("Error in getSchool:", error);
+    handleError(res, "Failed to fetch school", 500, error.message);
   }
 };
 
@@ -150,92 +109,51 @@ export const updateSchool = async (
   res: Response
 ) => {
   try {
-    const userId = getIdFromToken(req.headers.authorization);
-    const { name, email, phone, address, isActive } = req.body;
-    const { id } = req.params;
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
 
-    const userSchool = await prisma.userSchool.findUnique({
-      where: { userId_schoolId: { userId, schoolId: id } },
+    const userId = getIdFromToken(authHeader);
+    const { id: schoolId } = req.params;
+
+    const userSchool = await validateUserSchool(userId, schoolId);
+    if (!userSchool) return handleError(res, "School with this user not found", 404);
+
+    const updatedSchool = await prisma.school.update({
+      where: { id: schoolId },
+      data: req.body,
     });
 
-    if (!userSchool) {
-      res.status(404).json({
-        success: false,
-        message: "School with this user not found",
-      });
-      return;
-    }
-
-    const school = await prisma.school.update({
-      where: { id },
-      data: {
-        name,
-        email,
-        phone,
-        address,
-        isActive,
-      },
-    });
-    if (!school) {
-      res.status(404).json({
-        success: false,
-        message: "Unable to update school",
-      });
-      return;
-    }
     res.status(200).json({
       success: true,
       message: "School updated successfully",
-      school,
+      data: updatedSchool,
     });
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: "Failed to update school",
-      data: error || error.message,
-    });
+    console.error("Error in updateSchool:", error);
+    handleError(res, "Failed to update school", 500, error.message);
   }
 };
 
 // Delete school
-export const deleteSchool = async (
-  req: Request<{ id: string }>,
-  res: Response
-) => {
+export const deleteSchool = async (req: Request<{ id: string }>, res: Response) => {
   try {
-    const userId = getIdFromToken(req.headers.authorization);
-    const { id } = req.params;
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
 
-    const userSchool = await prisma.userSchool.findUnique({
-      where: { userId_schoolId: { userId, schoolId: id } },
-    });
+    const userId = getIdFromToken(authHeader);
+    const { id: schoolId } = req.params;
 
-    if (!userSchool) {
-      res.status(404).json({
-        success: false,
-        message: "School with this user not found",
-      });
-      return;
-    }
-    const school = await prisma.school.delete({
-      where: { id },
-    });
-    if (!school) {
-      res.status(404).json({
-        success: false,
-        message: "School not found",
-      });
-      return;
-    }
+    const userSchool = await validateUserSchool(userId, schoolId);
+    if (!userSchool) return handleError(res, "School with this user not found", 404);
+
+    await prisma.school.delete({ where: { id: schoolId } });
+
     res.status(200).json({
       success: true,
       message: "School deleted successfully",
     });
   } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: "Failed to delete school",
-      data: error || error.message,
-    });
+    console.error("Error in deleteSchool:", error);
+    handleError(res, "Failed to delete school", 500, error.message);
   }
 };
