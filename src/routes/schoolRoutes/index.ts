@@ -24,7 +24,7 @@ router.post(
   createSchool
 );
 
-// Find Get School
+// Get School
 router.get("/", getAllSchools);
 
 // Get Single School

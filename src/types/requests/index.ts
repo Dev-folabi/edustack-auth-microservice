@@ -1,9 +1,9 @@
 type ID = string | number;
 // Enum for Gender
 export enum Gender {
-  MALE = 'MALE',
-  FEMALE = 'FEMALE',
-  OTHER = 'OTHER'
+  MALE = "MALE",
+  FEMALE = "FEMALE",
+  OTHER = "OTHER",
 }
 
 // School Request
@@ -24,51 +24,48 @@ export interface IUserRequest {
 }
 
 // Role Request
-export interface IRoleRequest {
-  name: string;
-  schoolId: ID;
-  permissionIds?: string[];
-}
+// export interface IRoleRequest {
+//   name: string;
+//   schoolId: ID;
+//   permissionIds?: string[];
+// }
 
 // Permission Request
-export interface IPermissionRequest {
-  name: string;
-}
+// export interface IPermissionRequest {
+//   name: string;
+// }
 
 // Student Request
 export interface IStudentRequest extends IUserRequest {
-    userId: ID;
-    schoolId: ID;
-    name: string;
-    gender: Gender;
-    dob: string;
-    phone?: string;
-    email: string;
-    address: string;
-    admissionDate?: string;
-    religion?: string;
-    bloodGroup?: string;
-    fatherName?: string;
-    motherName?: string;
-    guardianName?: string;
-    guardianPhone?: string;
-    fatherOccupation?: string;
-    motherOccupation?: string;
-    isActive?: boolean;
-    city?: string;
-    state?: string;
-    country?: string;
-    routeVehicleId?: ID;
-    roomId?: ID;
-    addedBy?: ID;
-    photoUrl?: string;
-    parentId?: ID;
-  }
-  
+  schoolId: ID;
+  name: string;
+  gender: Gender;
+  dob: string;
+  phone?: string;
+  email: string;
+  address: string;
+  admissionDate?: string;
+  religion: string;
+  bloodGroup?: string;
+  fatherName?: string;
+  motherName?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  fatherOccupation?: string;
+  motherOccupation?: string;
+  isActive?: boolean;
+  city: string;
+  state: string;
+  country: string;
+  routeVehicleId?: ID;
+  roomId?: ID;
+  addedBy?: ID;
+  photoUrl?: string;
+  parentId?: ID;
+}
 
 // Staff Request
 export interface IStaffRequest extends IUserRequest {
-  userId: ID;
   name: string;
   phone: string[];
   email: string;
@@ -79,7 +76,7 @@ export interface IStaffRequest extends IUserRequest {
   dob?: Date;
   salary?: number;
   joining_date?: Date;
-  gender?: Gender;
+  gender: Gender;
   photo_url?: string;
   isActive?: boolean;
   qualification?: string;
@@ -88,7 +85,6 @@ export interface IStaffRequest extends IUserRequest {
 
 // Parent Request
 export interface IParentRequest {
-  userId: ID;
   name: string;
   phone?: string;
   email?: string;
@@ -101,4 +97,3 @@ export interface IUserSchoolRequest {
   userId: ID;
   schoolId: ID;
 }
-
