@@ -3,7 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 import api from "./routes/api";
 import prisma from "./prisma";
-
+import { errorHandler } from "./error/errorHandler";
 
 const app = express();
 
@@ -16,19 +16,18 @@ app.get("/", (req, res) => {
   res.send("Welcome to Edustack Auth Microservice");
 });
 
-app.use("/*", (req, res) => {
+app.use("/api", api);
+
+app.use("*", (req, res) => {
   res.status(404).send({
-    message: "Not Found",
+    message: "Resource Not Found",
   });
 });
 
+// Error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  res.status(500).send({
-    message: "Internal Server Error",
-  });
+  errorHandler(err, req, res, next);
 });
-
-app.use("/", api);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

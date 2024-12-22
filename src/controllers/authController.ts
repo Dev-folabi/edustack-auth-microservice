@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import prisma from "../prisma";
 import bcrypt from "bcrypt";
 import _ from "lodash";
@@ -10,11 +10,13 @@ import {
 import { generateToken } from "../function/token";
 import { UserRole } from "@prisma/client";
 import { validateSchool } from "../function/schoolFunctions";
+import { handleError } from "../error/errorHandler";
 
 // Super Admin Sign Up
 export const superAdminSignUp = async (
   req: Request<{}, {}, IUserRequest>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { email, password, username } = req.body;
@@ -46,18 +48,15 @@ export const superAdminSignUp = async (
       data: { user, token },
     });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: "Internal Server Error. Failed to create user.",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
 // Staff Sign Up
 export const staffSignUp = async (
   req: Request<{}, {}, IStaffRequest>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const {
@@ -85,8 +84,7 @@ export const staffSignUp = async (
     // Validate school existence
     const school = await validateSchool(String(schoolId));
     if (!school) {
-      res.status(404).json({ success: false, message: "School not found" });
-      return;
+      return handleError(res, "School not found", 404);
     }
 
     let newUser!: { id: string };
@@ -137,11 +135,7 @@ export const staffSignUp = async (
     });
   } catch (error: any) {
     console.error("Error in staffSignUp:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message || error,
-    });
+    next(error);
   }
 };
 
@@ -149,7 +143,8 @@ export const staffSignUp = async (
 
 export const studentSignUp = async (
   req: Request<{}, {}, IStudentRequest>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { email, password, username, schoolId, ...studentData } = req.body;
@@ -158,17 +153,14 @@ export const studentSignUp = async (
     const school = await validateSchool(String(schoolId));
 
     if (!school) {
-      res.status(404).json({ success: false, message: "School not found" });
-      return;
-    }
-    if (!school) {
-      res.status(404).json({ success: false, message: "School not found" });
-      return;
+      return handleError(res, "School not found", 404);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
     let newUser!: { id: string };
     const { userId, parentId, ...studentDataWithoutIds } = studentData;
+
     await prisma.$transaction(async (tx) => {
       newUser = await tx.user.create({
         data: { email, password: hashedPassword, username },
@@ -198,16 +190,16 @@ export const studentSignUp = async (
       data: { userId: newUser.id, token },
     });
   } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      data: error.message || "An error occurred",
-    });
+    next(error);
   }
 };
 
 // User Sign In
-export const userSignIn = async (req: Request, res: Response) => {
+export const userSignIn = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { email, password } = req.body;
 
@@ -227,20 +219,12 @@ export const userSignIn = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-      return;
+      return handleError(res, "User not found", 404);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      res.status(401).json({
-        success: false,
-        message: "Invalid login details",
-      });
-      return;
+      return handleError(res, "Invalid login details", 401);
     }
 
     const token = generateToken({ id: user.id });
@@ -252,11 +236,7 @@ export const userSignIn = async (req: Request, res: Response) => {
       message: "User signed in successfully",
       data: { userWithoutPassword, token },
     });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      data: error || error.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };

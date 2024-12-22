@@ -1,20 +1,22 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import prisma from "../prisma";
 import { ISchoolRequest } from "../types/requests";
 import { getIdFromToken } from "../function/token";
 import { validateUserSchool } from "../function/schoolFunctions";
+import { handleError } from "../error/errorHandler";
 
 
-// Unified error response helper
-const handleError = (res: Response, message: string, status = 400, data = null) => {
-  res.status(status).json({ success: false, message, data });
-};
 
 // Create a new school
-export const createSchool = async (req: Request<{}, {}, ISchoolRequest>, res: Response) => {
+export const createSchool = async (
+  req: Request<{}, {}, ISchoolRequest>,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
+    if (!authHeader)
+      return handleError(res, "Authorization header is missing", 401);
 
     const userId = getIdFromToken(authHeader);
     const { name, email, phone, address } = req.body;
@@ -25,7 +27,8 @@ export const createSchool = async (req: Request<{}, {}, ISchoolRequest>, res: Re
 
     // Check user school limit
     const schoolList = await prisma.userSchool.findMany();
-    if (schoolList.length >= 3) return handleError(res, "School limit of 3 reached", 400);
+    if (schoolList.length >= 3)
+      return handleError(res, "School limit of 3 reached", 400);
 
     // Create school
     const school = await prisma.school.create({
@@ -44,15 +47,20 @@ export const createSchool = async (req: Request<{}, {}, ISchoolRequest>, res: Re
     });
   } catch (error: any) {
     console.error("Error in createSchool:", error);
-    handleError(res, "Failed to create school", 500, error.message);
+    next(error);
   }
 };
 
 // Get all schools
-export const getAllSchools = async (req: Request, res: Response) => {
+export const getAllSchools = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
+    if (!authHeader)
+      return handleError(res, "Authorization header is missing", 401);
 
     const userId = getIdFromToken(authHeader);
 
@@ -73,21 +81,27 @@ export const getAllSchools = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Error in getAllSchools:", error);
-    handleError(res, "Failed to fetch schools", 500, error.message);
+    next(error);
   }
 };
 
 // Get school by id
-export const getSchool = async (req: Request<{ id: string }>, res: Response) => {
+export const getSchool = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
+    if (!authHeader)
+      return handleError(res, "Authorization header is missing", 401);
 
     const userId = getIdFromToken(authHeader);
     const { id: schoolId } = req.params;
 
     const userSchool = await validateUserSchool(userId, schoolId);
-    if (!userSchool) return handleError(res, "School with this user not found", 404);
+    if (!userSchool)
+      return handleError(res, "School with this user not found", 404);
 
     const school = await prisma.school.findUnique({ where: { id: schoolId } });
     if (!school) return handleError(res, "School not found", 404);
@@ -99,24 +113,27 @@ export const getSchool = async (req: Request<{ id: string }>, res: Response) => 
     });
   } catch (error: any) {
     console.error("Error in getSchool:", error);
-    handleError(res, "Failed to fetch school", 500, error.message);
+    next(error);
   }
 };
 
 // Update school
 export const updateSchool = async (
   req: Request<{ id: string }, {}, Partial<ISchoolRequest>>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
+    if (!authHeader)
+      return handleError(res, "Authorization header is missing", 401);
 
     const userId = getIdFromToken(authHeader);
     const { id: schoolId } = req.params;
 
     const userSchool = await validateUserSchool(userId, schoolId);
-    if (!userSchool) return handleError(res, "School with this user not found", 404);
+    if (!userSchool)
+      return handleError(res, "School with this user not found", 404);
 
     const updatedSchool = await prisma.school.update({
       where: { id: schoolId },
@@ -130,21 +147,27 @@ export const updateSchool = async (
     });
   } catch (error: any) {
     console.error("Error in updateSchool:", error);
-    handleError(res, "Failed to update school", 500, error.message);
+    next(error);
   }
 };
 
 // Delete school
-export const deleteSchool = async (req: Request<{ id: string }>, res: Response) => {
+export const deleteSchool = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader) return handleError(res, "Authorization header is missing", 401);
+    if (!authHeader)
+      return handleError(res, "Authorization header is missing", 401);
 
     const userId = getIdFromToken(authHeader);
     const { id: schoolId } = req.params;
 
     const userSchool = await validateUserSchool(userId, schoolId);
-    if (!userSchool) return handleError(res, "School with this user not found", 404);
+    if (!userSchool)
+      return handleError(res, "School with this user not found", 404);
 
     await prisma.school.delete({ where: { id: schoolId } });
 
@@ -154,6 +177,6 @@ export const deleteSchool = async (req: Request<{ id: string }>, res: Response) 
     });
   } catch (error: any) {
     console.error("Error in deleteSchool:", error);
-    handleError(res, "Failed to delete school", 500, error.message);
+    next(error);
   }
 };
