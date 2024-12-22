@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { validationResult, body, param } from "express-validator";
+import validator from "validator";
 
 const handleValidationErrors = (
   req: Request,
@@ -115,7 +116,7 @@ export const validateStaffSignUp = [
     .withMessage("Phone must be an array of strings")
     .optional()
     .custom((value: string[]) => {
-      if (!value.every((v) => typeof v === 'string')) {
+      if (!value.every((v) => typeof v === "string")) {
         throw new Error("All phone numbers must be strings");
       }
       return true;
@@ -138,10 +139,7 @@ export const validateStaffSignUp = [
     .optional()
     .isDate()
     .withMessage("Date of birth must be a valid date"),
-  body("salary")
-    .optional()
-    .isNumeric()
-    .withMessage("Salary must be a number"),
+  body("salary").optional().isNumeric().withMessage("Salary must be a number"),
   body("joining_date")
     .optional()
     .isDate()
@@ -158,10 +156,7 @@ export const validateStaffSignUp = [
     .optional()
     .isString()
     .withMessage("Qualification must be a string"),
-  body("notes")
-    .optional()
-    .isString()
-    .withMessage("Notes must be a string"),
+  body("notes").optional().isString().withMessage("Notes must be a string"),
 
   handleValidationErrors,
 ];
@@ -207,7 +202,7 @@ export const validateStudentSignUp = [
     .isArray()
     .withMessage("Phone must be an array of strings")
     .custom((value: string[]) => {
-      if (!value.every((v) => typeof v === 'string')) {
+      if (!value.every((v) => typeof v === "string")) {
         throw new Error("All phone numbers must be strings");
       }
       return true;
@@ -247,7 +242,7 @@ export const validateStudentSignUp = [
     .isArray()
     .withMessage("Guardian phone must be an array of strings")
     .custom((value: string[]) => {
-      if (!value.every((v) => typeof v === 'string')) {
+      if (!value.every((v) => typeof v === "string")) {
         throw new Error("All guardian phone numbers must be strings");
       }
       return true;
@@ -283,10 +278,7 @@ export const validateStudentSignUp = [
     .optional()
     .isString()
     .withMessage("Route vehicle ID must be a string"),
-  body("roomId")
-    .optional()
-    .isString()
-    .withMessage("Room ID must be a string"),
+  body("roomId").optional().isString().withMessage("Room ID must be a string"),
   body("addedBy")
     .optional()
     .isString()
@@ -304,14 +296,31 @@ export const validateStudentSignUp = [
 ];
 
 // Validation Sign in
+
 export const validateSignIn = [
-  body("email").optional().isEmail().withMessage("Valid email is required"),
+  body("emailOrUsername")
+    .trim()
+    .notEmpty()
+    .withMessage("Email or Username is required")
+    .custom((value) => {
+      const isEmail = validator.isEmail(value);
+      const isUsername = /^[a-zA-Z0-9_]{3,}$/.test(value); // Alphanumeric with optional underscores
+      if (!isEmail && !isUsername) {
+        throw new Error(
+          "Must be a valid email or a username with at least 3 alphanumeric characters"
+        );
+      }
+      return true;
+    }),
   body("password")
+    .trim()
     .notEmpty()
     .withMessage("Password is required")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long"),
-  body("username").optional().isString().withMessage("Username must be string"),
-
-  handleValidationErrors,
+    // .matches(/(?=.*[0-9])(?=.*[!@#$%^&*])(?=.*[A-Z])(?=.*[a-z])/)
+    // .withMessage(
+    //   "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character"
+    // ),
+  handleValidationErrors, // Middleware to handle validation errors
 ];

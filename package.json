@@ -25,7 +25,8 @@
     "express-validator": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "validator": "^13.12.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
@@ -37,6 +38,7 @@
     "@types/lodash": "^4.17.13",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.10.1",
+    "@types/validator": "^13.12.2",
     "@typescript-eslint/eslint-plugin": "^8.18.1",
     "@typescript-eslint/parser": "^8.18.1",
     "eslint": "^9.17.0",

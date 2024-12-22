@@ -201,10 +201,12 @@ export const userSignIn = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password } = req.body;
+    const { emailOrUsername, password } = req.body;
 
-    const user = await prisma.user.findUnique({
-      where: { email },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: emailOrUsername }, { username: emailOrUsername }],
+      },
       // select: {
       //   id: true,
       //   email: true,
