@@ -214,6 +214,15 @@ export const errorHandler = (
     }
   }
 
+  // Handle Prisma Initialization Errors
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to initialize database connection.",
+    });
+  }
+
   // Handle other non-Prisma errors
   console.error("Unhandled Error:", error);
   res.status(500).json({

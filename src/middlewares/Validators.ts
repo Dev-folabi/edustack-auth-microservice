@@ -23,7 +23,18 @@ const handleValidationErrors = (
 export const validateCreateSchool = [
   body("name").notEmpty().withMessage("School name is required"),
   body("email").isEmail().withMessage("Valid email is required"),
-  body("phone").optional().isString().withMessage("Phone must be a string"),
+  body("phone")
+    .optional()
+    .isArray().withMessage("Phone must be an array of strings")
+    .custom((value: string[]) => {
+      if (value.length < 1 || value.length > 3) {
+        throw new Error("Minimum of one phone number and a maximum of three are allowed");
+      }
+      if (!value.every((v) => typeof v === "string")) {
+        throw new Error("All phone numbers must be strings");
+      }
+      return true;
+    }),
   body("address").notEmpty().withMessage("Address is required"),
   handleValidationErrors,
 ];
