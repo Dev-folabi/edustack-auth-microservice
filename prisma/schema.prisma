@@ -46,8 +46,8 @@ model UserSchool {
   userId    String
   schoolId  String
   role      UserRole?
-  user      User       @relation(fields: [userId], references: [id])
-  school    School     @relation(fields: [schoolId], references: [id])
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school    School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
