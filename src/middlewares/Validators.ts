@@ -25,10 +25,13 @@ export const validateCreateSchool = [
   body("email").isEmail().withMessage("Valid email is required"),
   body("phone")
     .optional()
-    .isArray().withMessage("Phone must be an array of strings")
+    .isArray()
+    .withMessage("Phone must be an array of strings")
     .custom((value: string[]) => {
       if (value.length < 1 || value.length > 3) {
-        throw new Error("Minimum of one phone number and a maximum of three are allowed");
+        throw new Error(
+          "Minimum of one phone number and a maximum of three are allowed"
+        );
       }
       if (!value.every((v) => typeof v === "string")) {
         throw new Error("All phone numbers must be strings");
@@ -44,7 +47,21 @@ export const validateUpdateSchool = [
   param("id").isString().withMessage("School ID must be a string"),
   body("name").optional().notEmpty().withMessage("School name cannot be empty"),
   body("email").optional().isEmail().withMessage("Valid email is required"),
-  body("phone").optional().isString().withMessage("Phone must be a string"),
+  body("phone")
+    .optional()
+    .isArray()
+    .withMessage("Phone must be an array of strings")
+    .custom((value: string[]) => {
+      if (value.length < 1 || value.length > 3) {
+        throw new Error(
+          "Minimum of one phone number and a maximum of three are allowed"
+        );
+      }
+      if (!value.every((v) => typeof v === "string")) {
+        throw new Error("All phone numbers must be strings");
+      }
+      return true;
+    }),
   body("address").optional().notEmpty().withMessage("Address cannot be empty"),
   body("isActive")
     .optional()
@@ -329,9 +346,9 @@ export const validateSignIn = [
     .withMessage("Password is required")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long"),
-    // .matches(/(?=.*[0-9])(?=.*[!@#$%^&*])(?=.*[A-Z])(?=.*[a-z])/)
-    // .withMessage(
-    //   "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character"
-    // ),
+  // .matches(/(?=.*[0-9])(?=.*[!@#$%^&*])(?=.*[A-Z])(?=.*[a-z])/)
+  // .withMessage(
+  //   "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character"
+  // ),
   handleValidationErrors, // Middleware to handle validation errors
 ];

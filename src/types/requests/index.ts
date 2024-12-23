@@ -42,7 +42,6 @@ export interface IStudentRequest extends IUserRequest {
   gender: Gender;
   dob: string;
   phone?: string;
-  email: string;
   address: string;
   admissionDate?: string;
   religion: string;
@@ -68,7 +67,6 @@ export interface IStudentRequest extends IUserRequest {
 export interface IStaffRequest extends IUserRequest {
   name: string;
   phone: string[];
-  email: string;
   address: string;
   schoolId: ID;
   role: string;

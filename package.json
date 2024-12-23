@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "prisma:generate": "prisma generate",
-    "prisma:migrate-dev": "prisma migrate deploy",
+    "prisma:migrate-dev": "prisma migrate dev",
     "prisma:migrate": "prisma migrate deploy",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
