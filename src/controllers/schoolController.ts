@@ -5,8 +5,6 @@ import { getIdFromToken } from "../function/token";
 import { validateUserSchool } from "../function/schoolFunctions";
 import { handleError } from "../error/errorHandler";
 
-
-
 // Create a new school
 export const createSchool = async (
   req: Request<{}, {}, ISchoolRequest>,

@@ -4,11 +4,7 @@ import { getIdFromToken } from "../function/token";
 import { UserRole as PrismaUserRole } from "@prisma/client";
 
 export const roleAuthorization = (roles: PrismaUserRole[]) => {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const authHeader = req.headers["authorization"];
       if (!authHeader) {
@@ -29,29 +25,21 @@ export const roleAuthorization = (roles: PrismaUserRole[]) => {
         return handleError(res, 404, "User not found");
       }
 
-      const isAuthorized =
-        user.isSuperAdmin || (await hasAnyRole(userId, roles));
+      const isAuthorized = user.isSuperAdmin || (await hasAnyRole(userId, roles));
       if (!isAuthorized) {
-        return handleError(
-          res,
-          403,
-          "You are not authorized to perform this action"
-        );
+        return handleError(res, 403, "You are not authorized to perform this action");
       }
 
+      
       next();
-    } catch (error) {
-      console.error("Error in roleAuthorization:", error);
-      handleError(res, 500, "Internal server error");
+    } catch (error: any) {
+      console.error("Error in roleAuthorization:", error.message);
+      handleError(res, 500, error.message);
     }
   };
 };
 
-export const tokenAuthorization = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const tokenAuthorization = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers["authorization"];
     if (!authHeader) {
@@ -64,30 +52,23 @@ export const tokenAuthorization = async (
     }
 
     next();
-  } catch (error) {
-    console.error("Error in tokenAuthorization:", error);
-    handleError(res, 500, "Internal server error");
+  } catch (error: any) {
+    console.error("Error in tokenAuthorization:", error.message);
+    handleError(res, 500, error.message);
   }
 };
 
-export const secureHeaderValidation = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const secureHeaderValidation = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const secureHeaderKey = process.env.EDUSTACK_SECURE_HEADER_KEY;
-    if (
-      !secureHeaderKey ||
-      req.headers["x-header-secure-key"] !== secureHeaderKey
-    ) {
+    if (!secureHeaderKey || req.headers["x-header-secure-key"] !== secureHeaderKey) {
       return handleError(res, 400, "Secure header key is missing or invalid");
     }
 
     next();
-  } catch (error) {
-    console.error("Error in secureHeaderValidation:", error);
-    handleError(res, 500, "Internal server error");
+  } catch (error: any) {
+    console.error("Error in secureHeaderValidation:", error.message);
+    handleError(res, 500, error.message);
   }
 };
 
@@ -97,7 +78,7 @@ const hasAnyRole = async (userId: string, roles: PrismaUserRole[]) => {
       where: { id: userId },
     });
 
-    return userRole?.role?.some((role) => roles.includes(role)) || false;
+    return userRole?.role && roles.includes(userRole.role) || false;
   } catch (error) {
     console.error("Error in hasAnyRole:", error);
     throw error;

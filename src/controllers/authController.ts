@@ -100,7 +100,7 @@ export const staffSignUp = async (
         data: {
           userId: newUser.id,
           schoolId: school.id,
-          role: { set: [role as UserRole] },
+          role: role as UserRole,
         },
       });
 
@@ -168,7 +168,7 @@ export const studentSignUp = async (
       });
 
       await tx.userSchool.create({
-        data: { userId: newUser.id, schoolId: school.id, role: ["student"] },
+        data: { userId: newUser.id, schoolId: school.id, role: "student" },
       });
 
       await tx.student.create({

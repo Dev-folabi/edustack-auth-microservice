@@ -32,7 +32,7 @@ enum UserRole {
 model School {
   id          String       @id @default(cuid())
   name        String       @unique
-  email       String       @unique
+  email       String
   phone       String[]
   address     String
   userSchools UserSchool[]
@@ -45,7 +45,7 @@ model UserSchool {
   id        String     @id @default(cuid())
   userId    String
   schoolId  String
-  role      UserRole[]
+  role      UserRole?
   user      User       @relation(fields: [userId], references: [id])
   school    School     @relation(fields: [schoolId], references: [id])
   createdAt DateTime   @default(now())

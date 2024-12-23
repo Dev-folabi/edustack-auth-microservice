@@ -41,6 +41,6 @@ export const getIdFromToken = (authHeader?: string): string => {
     ) as TokenPayload;
     return decoded.id;
   } catch (error : any) {
-    throw new Error(`Invalid token: ${error.message}`);
+    throw new Error(`Invalid token sent`);
   }
 };
