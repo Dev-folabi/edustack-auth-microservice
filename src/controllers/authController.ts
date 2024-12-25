@@ -8,7 +8,7 @@ import {
   IStudentRequest,
 } from "../types/requests";
 import { generateToken } from "../function/token";
-import { UserRole } from "@prisma/client";
+import { Gender, UserRole } from "@prisma/client";
 import { validateSchool } from "../function/schoolFunctions";
 import { handleError } from "../error/errorHandler";
 
@@ -207,17 +207,17 @@ export const userSignIn = async (
       where: {
         OR: [{ email: emailOrUsername }, { username: emailOrUsername }],
       },
-      // select: {
-      //   id: true,
-      //   email: true,
-      //   username: true,
-      //   isSuperAdmin: true,
-      //   userSchools: true,
-      //   staff: true,
-      //   student: true,
-      //   parent: true,
-      //   password: true,
-      // },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        isSuperAdmin: true,
+        userSchools: true,
+        staff: true,
+        student: true,
+        parent: true,
+        password: true,
+      },
     });
 
     if (!user) {
