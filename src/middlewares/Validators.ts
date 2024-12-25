@@ -126,14 +126,19 @@ export const validateStaffSignUp = [
     .isString()
     .withMessage("School ID must be string"),
   body("role")
-    .notEmpty()
-    .withMessage("Role is required")
+    .optional()
     .isString()
     .withMessage("Role must be string")
-    .isIn(["student", "admin", "teacher", "accountant", "librarian", "parent"])
+    .isIn(["admin", "teacher", "accountant", "librarian"])
     .withMessage(
-      "Role can only be student, admin, teacher, accountant, librarian, or parent"
-    ),
+      "Staff role can only be admin, teacher, accountant, or librarian"
+    )
+    .custom((value) => {
+      if (value) {
+        return value.toLowerCase();
+      }
+      return value;
+    }),
   body("name")
     .notEmpty()
     .withMessage("Name is required")
@@ -158,7 +163,13 @@ export const validateStaffSignUp = [
     .notEmpty()
     .withMessage("Gender is required")
     .isString()
-    .withMessage("Gender must be a string"),
+    .withMessage("Gender must be a string")
+    .custom((value) => {
+      if (value) {
+        return value.toLowerCase();
+      }
+      return value;
+    }),
   body("designation")
     .optional()
     .isString()
@@ -220,7 +231,13 @@ export const validateStudentSignUp = [
     .notEmpty()
     .withMessage("Gender is required")
     .isString()
-    .withMessage("Gender must be a string"),
+    .withMessage("Gender must be a string")
+    .custom((value) => {
+      if (value) {
+        return value.toLowerCase();
+      }
+      return value;
+    }),
   body("dob")
     .optional()
     .isDate()
@@ -332,10 +349,10 @@ export const validateSignIn = [
     .withMessage("Email or Username is required")
     .custom((value) => {
       const isEmail = validator.isEmail(value);
-      const isUsername = /^[a-zA-Z0-9_]{3,}$/.test(value); // Alphanumeric with optional underscores
+      const isUsername = typeof value === "string" && value.length >= 3;
       if (!isEmail && !isUsername) {
         throw new Error(
-          "Must be a valid email or a username with at least 3 alphanumeric characters"
+          "Must be a valid email or a username with at least 3 characters"
         );
       }
       return true;

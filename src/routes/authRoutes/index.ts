@@ -27,7 +27,7 @@ router.post(
 router.post("/staff-signup", validateStaffSignUp, signUpvalidate, staffSignUp);
 
 // Student Signup
-router.post("/student-signup", validateStudentSignUp, studentSignUp);
+router.post("/student-signup", validateStudentSignUp, signUpvalidate, studentSignUp);
 
 // User Sign-in
 router.post("/signin", validateSignIn, userSignIn);

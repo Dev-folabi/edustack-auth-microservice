@@ -1,9 +1,9 @@
 type ID = string | number;
 // Enum for Gender
-export enum Gender {
-  MALE = "MALE",
-  FEMALE = "FEMALE",
-  OTHER = "OTHER",
+enum Gender {
+  male = "male",
+  female = "female",
+  others = "others",
 }
 
 // School Request
