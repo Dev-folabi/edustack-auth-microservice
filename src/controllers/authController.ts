@@ -159,7 +159,7 @@ export const studentSignUp = async (
     const hashedPassword = await bcrypt.hash(password, 10);
 
     let newUser!: { id: string };
-    const { parentId, ...studentDataWithoutId } = studentData;
+    const { parentId, dob, admission_date, ...studentDataWithoutId } = studentData;
 
     await prisma.$transaction(async (tx) => {
       newUser = await tx.user.create({
@@ -175,6 +175,8 @@ export const studentSignUp = async (
         data: {
           userId: newUser.id,
           parentId: String(parentId) || undefined,
+          dob: new Date(String(dob)),
+          admission_date: new Date(String(admission_date)),
           ...studentDataWithoutId,
         },
       });
