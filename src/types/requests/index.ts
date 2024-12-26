@@ -1,4 +1,4 @@
-type ID = string | number;
+type ID = string;
 // Enum for Gender
 enum Gender {
   male = "male",
@@ -43,23 +43,23 @@ export interface IStudentRequest extends IUserRequest {
   dob: string;
   phone?: string;
   address: string;
-  admissionDate?: string;
+  admission_date?: string;
   religion: string;
-  bloodGroup?: string;
-  fatherName?: string;
-  motherName?: string;
-  guardianName?: string;
-  guardianPhone?: string;
-  fatherOccupation?: string;
-  motherOccupation?: string;
+  blood_group ?: string;
+  father_name?: string;
+  mother_name ?: string;
+  guardian_name?: string;
+  guardian_phone: string[];
+  father_occupation?: string;
+  mother_occupation?: string;
   isActive?: boolean;
   city: string;
   state: string;
   country: string;
-  routeVehicleId?: ID;
-  roomId?: ID;
-  addedBy?: ID;
-  photoUrl?: string;
+  route_vehicle_id?: string;
+  room_id?: ID;
+  added_by?: ID;
+  photo_url?: string;
   parentId?: ID;
 }
 

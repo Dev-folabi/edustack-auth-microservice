@@ -133,11 +133,8 @@ export const validateStaffSignUp = [
     .withMessage(
       "Staff role can only be admin, teacher, accountant, or librarian"
     )
-    .custom((value) => {
-      if (value) {
-        return value.toLowerCase();
-      }
-      return value;
+    .customSanitizer((value) => {
+      return value ? value.toLowerCase() : value;
     }),
   body("name")
     .notEmpty()
@@ -164,11 +161,8 @@ export const validateStaffSignUp = [
     .withMessage("Gender is required")
     .isString()
     .withMessage("Gender must be a string")
-    .custom((value) => {
-      if (value) {
-        return value.toLowerCase();
-      }
-      return value;
+    .customSanitizer((value) => {
+      return value ? value.toLowerCase() : value;
     }),
   body("designation")
     .optional()
@@ -232,11 +226,8 @@ export const validateStudentSignUp = [
     .withMessage("Gender is required")
     .isString()
     .withMessage("Gender must be a string")
-    .custom((value) => {
-      if (value) {
-        return value.toLowerCase();
-      }
-      return value;
+    .customSanitizer((value) => {
+      return value ? value.toLowerCase() : value;
     }),
   body("dob")
     .optional()
@@ -244,14 +235,8 @@ export const validateStudentSignUp = [
     .withMessage("Date of birth must be a valid date"),
   body("phone")
     .optional()
-    .isArray()
-    .withMessage("Phone must be an array of strings")
-    .custom((value: string[]) => {
-      if (!value.every((v) => typeof v === "string")) {
-        throw new Error("All phone numbers must be strings");
-      }
-      return true;
-    }),
+    .isString()
+    .withMessage("Phone must be a string"),
   body("address")
     .notEmpty()
     .withMessage("Address is required")
@@ -266,24 +251,25 @@ export const validateStudentSignUp = [
     .withMessage("Religion is required")
     .isString()
     .withMessage("Religion must be a string"),
-  body("bloodGroup")
+  body("blood_group")
     .optional()
     .isString()
     .withMessage("Blood group must be a string"),
-  body("fatherName")
+  body("father_name")
     .optional()
     .isString()
     .withMessage("Father's name must be a string"),
-  body("motherName")
+  body("mother_name")
     .optional()
     .isString()
     .withMessage("Mother's name must be a string"),
-  body("guardianName")
+  body("guardian_name")
     .optional()
     .isString()
     .withMessage("Guardian's name must be a string"),
-  body("guardianPhone")
-    .optional()
+  body("guardian_phone")
+    .notEmpty()
+    .withMessage("guardian phone is required")
     .isArray()
     .withMessage("Guardian phone must be an array of strings")
     .custom((value: string[]) => {
@@ -292,11 +278,11 @@ export const validateStudentSignUp = [
       }
       return true;
     }),
-  body("fatherOccupation")
+  body("father_occupation")
     .optional()
     .isString()
     .withMessage("Father's occupation must be a string"),
-  body("motherOccupation")
+  body("mother_occupation")
     .optional()
     .isString()
     .withMessage("Mother's occupation must be a string"),
@@ -319,16 +305,16 @@ export const validateStudentSignUp = [
     .withMessage("Country is required")
     .isString()
     .withMessage("Country must be a string"),
-  body("routeVehicleId")
+  body("route_vehicle_id")
     .optional()
     .isString()
     .withMessage("Route vehicle ID must be a string"),
-  body("roomId").optional().isString().withMessage("Room ID must be a string"),
-  body("addedBy")
+  body("room_id").optional().isString().withMessage("Room ID must be a string"),
+  body("added_by")
     .optional()
     .isString()
     .withMessage("Added by must be a string"),
-  body("photoUrl")
+  body("photo_url")
     .optional()
     .isString()
     .withMessage("Photo URL must be a string"),

@@ -2,9 +2,10 @@ import express from "express";
 import {
   createSchool,
   deleteSchool,
-  getAllSchools,
+  getUserSchools,
   getSchool,
   updateSchool,
+  getAllSchools,
 } from "../../controllers/schoolController";
 import {
   validateCreateSchool,
@@ -24,8 +25,11 @@ router.post(
   createSchool
 );
 
-// Get School
-router.get("/", getAllSchools);
+// Get User School
+router.get("/", getUserSchools);
+
+// Get All Schools
+router.get("/all", getAllSchools);
 
 // Get Single School
 router.get("/:id", validateGetSchool, getSchool);

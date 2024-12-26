@@ -8,7 +8,7 @@ import {
   IStudentRequest,
 } from "../types/requests";
 import { generateToken } from "../function/token";
-import { Gender, UserRole } from "@prisma/client";
+import {UserRole } from "@prisma/client";
 import { validateSchool } from "../function/schoolFunctions";
 import { handleError } from "../error/errorHandler";
 
@@ -158,36 +158,46 @@ export const studentSignUp = async (
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    let newUser!: { id: string };
-    const { parentId, ...studentDataWithoutId } = studentData;
+    const { parentId, dob, admission_date, ...studentDataWithoutId } =
+      studentData;
 
-    await prisma.$transaction(async (tx) => {
-      newUser = await tx.user.create({
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
         data: { email, password: hashedPassword, username },
-        select: { id: true },
       });
 
-      await tx.userSchool.create({
-        data: { userId: newUser.id, schoolId: school.id, role: "student" },
+      const userSchools = await tx.userSchool.create({
+        data: { userId: user.id, schoolId: school.id, role: "student" },
       });
 
-      await tx.student.create({
+      const student = await tx.student.create({
         data: {
-          userId: newUser.id,
+          userId: user.id,
           parentId: String(parentId) || undefined,
+          dob: new Date(String(dob)),
+          admission_date: new Date(String(admission_date)),
           ...studentDataWithoutId,
         },
       });
+
+      return { user, userSchools, student };
     });
 
     // Generate token
-    const token = generateToken({ id: newUser.id });
+    const token = generateToken({ id: result.user.id });
+
+    const userData = _.omit(result.user, ["password"]);
 
     // Success response
     res.status(201).json({
       success: true,
       message: "Staff created successfully",
-      data: { userId: newUser.id, token },
+      data: {
+        userData,
+        userSchools: result.userSchools,
+        student: result.student,
+        token,
+      },
     });
   } catch (error: any) {
     next(error);
@@ -203,7 +213,7 @@ export const userSignIn = async (
   try {
     const { emailOrUsername, password } = req.body;
 
-    const user = await prisma.user.findFirst({
+    const result = await prisma.user.findFirst({
       where: {
         OR: [{ email: emailOrUsername }, { username: emailOrUsername }],
       },
@@ -220,23 +230,36 @@ export const userSignIn = async (
       },
     });
 
-    if (!user) {
+    if (!result) {
       return handleError(res, "User not found", 404);
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, result.password);
     if (!isPasswordValid) {
       return handleError(res, "Invalid login details", 401);
     }
 
-    const token = generateToken({ id: user.id });
+    const token = generateToken({ id: result.id });
 
-    const userWithoutPassword = _.omit(user, ["password"]);
+    const userData = _.omit(result, [
+      "password",
+      "userSchools",
+      "staff",
+      "student",
+      "parent",
+    ]);
 
     res.status(200).json({
       success: true,
       message: "User signed in successfully",
-      data: { userWithoutPassword, token },
+      data: {
+        userData,
+        userSchools: result.userSchools,
+        staff: result.staff,
+        student: result.student,
+        parent: result.parent,
+        token,
+      },
     });
   } catch (error) {
     next(error);
