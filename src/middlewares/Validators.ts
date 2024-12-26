@@ -235,14 +235,8 @@ export const validateStudentSignUp = [
     .withMessage("Date of birth must be a valid date"),
   body("phone")
     .optional()
-    .isArray()
-    .withMessage("Phone must be an array of strings")
-    .custom((value: string[]) => {
-      if (!value.every((v) => typeof v === "string")) {
-        throw new Error("All phone numbers must be strings");
-      }
-      return true;
-    }),
+    .isString()
+    .withMessage("Phone must be a string"),
   body("address")
     .notEmpty()
     .withMessage("Address is required")
@@ -274,7 +268,8 @@ export const validateStudentSignUp = [
     .isString()
     .withMessage("Guardian's name must be a string"),
   body("guardian_phone")
-    .optional()
+    .notEmpty()
+    .withMessage("guardian phone is required")
     .isArray()
     .withMessage("Guardian phone must be an array of strings")
     .custom((value: string[]) => {

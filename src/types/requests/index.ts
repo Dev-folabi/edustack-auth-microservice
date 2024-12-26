@@ -49,7 +49,7 @@ export interface IStudentRequest extends IUserRequest {
   father_name?: string;
   mother_name ?: string;
   guardian_name?: string;
-  guardian_phone?: string;
+  guardian_phone: string[];
   father_occupation?: string;
   mother_occupation?: string;
   isActive?: boolean;

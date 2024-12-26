@@ -4,7 +4,11 @@ import { getIdFromToken } from "../function/token";
 import { UserRole as PrismaUserRole } from "@prisma/client";
 
 export const roleAuthorization = (roles: PrismaUserRole[]) => {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const authHeader = req.headers["authorization"];
       if (!authHeader) {
@@ -25,12 +29,16 @@ export const roleAuthorization = (roles: PrismaUserRole[]) => {
         return handleError(res, 404, "User not found");
       }
 
-      const isAuthorized = user.isSuperAdmin || (await hasAnyRole(userId, roles));
+      const isAuthorized =
+        user.isSuperAdmin || (await hasAnyRole(userId, roles));
       if (!isAuthorized) {
-        return handleError(res, 403, "You are not authorized to perform this action");
+        return handleError(
+          res,
+          403,
+          "You are not authorized to perform this action"
+        );
       }
 
-      
       next();
     } catch (error: any) {
       console.error("Error in roleAuthorization:", error.message);
@@ -39,7 +47,11 @@ export const roleAuthorization = (roles: PrismaUserRole[]) => {
   };
 };
 
-export const tokenAuthorization = async (req: Request, res: Response, next: NextFunction) => {
+export const tokenAuthorization = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const authHeader = req.headers["authorization"];
     if (!authHeader) {
@@ -58,10 +70,17 @@ export const tokenAuthorization = async (req: Request, res: Response, next: Next
   }
 };
 
-export const secureHeaderValidation = async (req: Request, res: Response, next: NextFunction) => {
+export const secureHeaderValidation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const secureHeaderKey = process.env.EDUSTACK_SECURE_HEADER_KEY;
-    if (!secureHeaderKey || req.headers["x-header-secure-key"] !== secureHeaderKey) {
+    if (
+      !secureHeaderKey ||
+      req.headers["x-header-secure-key"] !== secureHeaderKey
+    ) {
       return handleError(res, 400, "Secure header key is missing or invalid");
     }
 
@@ -74,11 +93,11 @@ export const secureHeaderValidation = async (req: Request, res: Response, next: 
 
 const hasAnyRole = async (userId: string, roles: PrismaUserRole[]) => {
   try {
-    const userRole = await prisma.userSchool.findUnique({
-      where: { id: userId },
+    const userRole = await prisma.userSchool.findFirst({
+      where: { userId },
     });
 
-    return userRole?.role && roles.includes(userRole.role) || false;
+    return (userRole?.role && roles.includes(userRole.role)) || false;
   } catch (error) {
     console.error("Error in hasAnyRole:", error);
     throw error;

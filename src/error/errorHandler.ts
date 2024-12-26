@@ -14,6 +14,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Can't reach database server",
+          data: error.meta || {},
         });
 
       case "P2000":
@@ -21,6 +22,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Input value is too long for the column",
+          data: error.meta || {},
         });
 
       case "P2001":
@@ -28,6 +30,7 @@ export const errorHandler = (
         return res.status(404).json({
           success: false,
           message: "Record not found",
+          data: error.meta || {},
         });
 
       case "P2002":
@@ -35,6 +38,7 @@ export const errorHandler = (
         return res.status(409).json({
           success: false,
           message: "Unique constraint violation",
+          data: error.meta || {},
         });
 
       case "P2003":
@@ -42,6 +46,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Foreign key constraint failed",
+          data: error.meta || {},
         });
 
       case "P2004":
@@ -49,6 +54,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "A database constraint failed",
+          data: error.meta || {},
         });
 
       case "P2005":
@@ -56,6 +62,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Invalid value provided for a column",
+          data: error.meta || {},
         });
 
       case "P2006":
@@ -63,6 +70,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Invalid value provided for a field",
+          data: error.meta || {},
         });
 
       case "P2007":
@@ -70,6 +78,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Data validation error",
+          data: error.meta || {},
         });
 
       case "P2008":
@@ -77,6 +86,7 @@ export const errorHandler = (
         return res.status(500).json({
           success: false,
           message: "Query parsing error",
+          data: error.meta || {},
         });
 
       case "P2009":
@@ -84,6 +94,7 @@ export const errorHandler = (
         return res.status(500).json({
           success: false,
           message: "Query validation error",
+          data: error.meta || {},
         });
 
       case "P2010":
@@ -91,6 +102,7 @@ export const errorHandler = (
         return res.status(500).json({
           success: false,
           message: "Raw query execution failed",
+          data: error.meta || {},
         });
 
       case "P2011":
@@ -98,6 +110,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Null constraint violation",
+          data: error.meta || {},
         });
 
       case "P2012":
@@ -105,6 +118,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Missing a required value",
+          data: error.meta || {},
         });
 
       case "P2013":
@@ -112,6 +126,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Missing WHERE clause",
+          data: error.meta || {},
         });
 
       case "P2014":
@@ -119,6 +134,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Relation violation detected",
+          data: error.meta || {},
         });
 
       case "P2015":
@@ -126,6 +142,7 @@ export const errorHandler = (
         return res.status(404).json({
           success: false,
           message: "Related record not found",
+          data: error.meta || {},
         });
 
       case "P2016":
@@ -133,6 +150,7 @@ export const errorHandler = (
         return res.status(500).json({
           success: false,
           message: "Query interpretation error",
+          data: error.meta || {},
         });
 
       case "P2017":
@@ -140,6 +158,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Records for the relation are not connected",
+          data: error.meta || {},
         });
 
       case "P2018":
@@ -147,6 +166,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Required connected records not found",
+          data: error.meta || {},
         });
 
       case "P2019":
@@ -154,6 +174,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Input error",
+          data: error.meta || {},
         });
 
       case "P2020":
@@ -161,6 +182,7 @@ export const errorHandler = (
         return res.status(400).json({
           success: false,
           message: "Value out of range for the column",
+          data: error.meta || {},
         });
 
       case "P2021":
@@ -168,6 +190,7 @@ export const errorHandler = (
         return res.status(500).json({
           success: false,
           message: "Table not found in the database",
+          data: error.meta || {},
         });
 
       case "P2022":
@@ -175,6 +198,7 @@ export const errorHandler = (
         return res.status(500).json({
           success: false,
           message: "Column not found in the database",
+          data: error.meta || {},
         });
 
       case "P2023":
@@ -182,6 +206,7 @@ export const errorHandler = (
         return res.status(500).json({
           success: false,
           message: "Inconsistent column data",
+          data: error.meta || {},
         });
 
       case "P2024":
@@ -189,6 +214,7 @@ export const errorHandler = (
         return res.status(503).json({
           success: false,
           message: "Operation timed out",
+          data: error.meta || {},
         });
 
       case "P2025":
@@ -196,6 +222,7 @@ export const errorHandler = (
         return res.status(404).json({
           success: false,
           message: "Record to delete does not exist",
+          data: error.meta || {},
         });
 
       case "P2026":
@@ -203,6 +230,7 @@ export const errorHandler = (
         return res.status(500).json({
           success: false,
           message: "Database server error",
+          data: error.meta || {},
         });
 
       default:
@@ -210,6 +238,7 @@ export const errorHandler = (
         return res.status(500).json({
           success: false,
           message: `An unknown database error occurred (code: ${error.code})`,
+          data: error.meta || {},
         });
     }
   }
@@ -218,8 +247,16 @@ export const errorHandler = (
   if (error instanceof Prisma.PrismaClientInitializationError) {
     return res.status(500).json({
       success: false,
-      message:
-        "Failed to initialize database connection.",
+      message: "Failed to initialize database connection.",
+    });
+  }
+
+  // Handle Prisma Client Validation Errors
+  if (error instanceof Prisma.PrismaClientValidationError) {
+    return res.status(400).json({
+      success: false,
+      message: "Validation error. Please check your input data.",
+      data: error.message.split("\n").slice(-1)[0],
     });
   }
 

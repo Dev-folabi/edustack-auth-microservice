@@ -24,7 +24,7 @@ export const createSchool = async (
     if (existingSchool) return handleError(res, "School already exists", 400);
 
     // Check user school limit
-    const schoolList = await prisma.userSchool.findMany();
+    const schoolList = await prisma.school.findMany();
     if (schoolList.length >= 3)
       return handleError(res, "School limit of 3 reached", 400);
 
@@ -49,8 +49,8 @@ export const createSchool = async (
   }
 };
 
-// Get all schools
-export const getAllSchools = async (
+// Get user schools
+export const getUserSchools = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -71,7 +71,39 @@ export const getAllSchools = async (
     if (!schools.length) {
       return handleError(res, "No schools found", 404);
     }
+    res.status(200).json({
+      success: true,
+      message: "Schools fetched successfully",
+      data: schools,
+    });
+  } catch (error: any) {
+    console.error("Error in getAllSchools:", error);
+    next(error);
+  }
+};
 
+// Get All schools
+export const getAllSchools = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader)
+      return handleError(res, "Authorization header is missing", 401);
+
+    //const userId = getIdFromToken(authHeader);
+
+    // if (userId) {
+    //   return handleError(res, "No schools found", 400);
+    // }
+
+    const schools = await prisma.school.findMany();
+
+    if (!schools.length) {
+      return handleError(res, "No schools found", 404);
+    }
     res.status(200).json({
       success: true,
       message: "Schools fetched successfully",

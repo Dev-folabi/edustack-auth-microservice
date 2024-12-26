@@ -85,7 +85,7 @@ model Student {
   father_name       String?
   mother_name       String?
   guardian_name     String?
-  guardian_phone    String?
+  guardian_phone    String[]
   father_occupation String?
   mother_occupation String?
   isActive          Boolean  @default(true)
