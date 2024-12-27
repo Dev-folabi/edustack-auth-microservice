@@ -173,7 +173,7 @@ export const studentSignUp = async (
       const student = await tx.student.create({
         data: {
           userId: user.id,
-          parentId: String(parentId) || undefined,
+          parentId: String(parentId) || "",
           dob: new Date(String(dob)),
           admission_date: new Date(String(admission_date)),
           ...studentDataWithoutId,
