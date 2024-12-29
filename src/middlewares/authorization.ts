@@ -42,7 +42,7 @@ export const roleAuthorization = (roles: PrismaUserRole[]) => {
       next();
     } catch (error: any) {
       console.error("Error in roleAuthorization:", error.message);
-      handleError(res, 500, error.message);
+      next(error);
     }
   };
 };
@@ -66,7 +66,7 @@ export const tokenAuthorization = async (
     next();
   } catch (error: any) {
     console.error("Error in tokenAuthorization:", error.message);
-    handleError(res, 500, error.message);
+    next(error);
   }
 };
 
