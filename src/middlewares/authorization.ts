@@ -10,12 +10,7 @@ export const roleAuthorization = (roles: PrismaUserRole[]) => {
     next: NextFunction
   ): Promise<void> => {
     try {
-      const authHeader = req.headers["authorization"];
-      if (!authHeader) {
-        return handleError(res, 400, "Authorization header is missing");
-      }
-
-      const userId = getIdFromToken(authHeader);
+      const userId = getIdFromToken(req);
       if (!userId) {
         return handleError(res, 400, "Invalid token provided");
       }
@@ -47,18 +42,13 @@ export const roleAuthorization = (roles: PrismaUserRole[]) => {
   };
 };
 
-export const tokenAuthorization = async (
+export const verifyToken = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers["authorization"];
-    if (!authHeader) {
-      return handleError(res, 400, "Authorization header is missing");
-    }
-
-    const userId = getIdFromToken(authHeader);
+    const userId = getIdFromToken(req);
     if (!userId) {
       return handleError(res, 400, "Invalid token provided");
     }

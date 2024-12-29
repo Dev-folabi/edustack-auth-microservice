@@ -12,11 +12,7 @@ export const createSchool = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return handleError(res, "Authorization header is missing", 401);
-
-    const userId = getIdFromToken(authHeader);
+    const userId = getIdFromToken(req);
     const { name, email, phone, address } = req.body;
 
     // Check if the school already exists
@@ -56,11 +52,7 @@ export const getUserSchools = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return handleError(res, "Authorization header is missing", 401);
-
-    const userId = getIdFromToken(authHeader);
+    const userId = getIdFromToken(req);
 
     const schools = await prisma.school.findMany({
       where: {
@@ -122,11 +114,7 @@ export const getSchool = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return handleError(res, "Authorization header is missing", 401);
-
-    const userId = getIdFromToken(authHeader);
+    const userId = getIdFromToken(req);
     const { id: schoolId } = req.params;
 
     const userSchool = await validateUserSchool(userId, schoolId);
@@ -154,11 +142,7 @@ export const updateSchool = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return handleError(res, "Authorization header is missing", 401);
-
-    const userId = getIdFromToken(authHeader);
+    const userId = getIdFromToken(req);
     const { id: schoolId } = req.params;
 
     const userSchool = await validateUserSchool(userId, schoolId);
@@ -188,11 +172,7 @@ export const deleteSchool = async (
   next: NextFunction
 ) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return handleError(res, "Authorization header is missing", 401);
-
-    const userId = getIdFromToken(authHeader);
+    const userId = getIdFromToken(req);
     const { id: schoolId } = req.params;
 
     const userSchool = await validateUserSchool(userId, schoolId);
