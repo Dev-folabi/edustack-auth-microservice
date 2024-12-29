@@ -355,3 +355,60 @@ export const validateSignIn = [
   // ),
   handleValidationErrors, // Middleware to handle validation errors
 ];
+
+export const validateCreateSession = [
+  body("label")
+    .trim()
+    .notEmpty()
+    .withMessage("Label is required")
+    .isString()
+    .withMessage("Label must be a string"),
+  body("start_date")
+    .trim()
+    .notEmpty()
+    .withMessage("Start date is required")
+    .isDate()
+    .withMessage("Start date must be a valid date"),
+  body("end_date")
+    .trim()
+    .notEmpty()
+    .withMessage("End date is required")
+    .isDate()
+    .withMessage("End date must be a valid date"),
+  body("isActive")
+    .optional()
+    .isBoolean()
+    .withMessage("Is active must be a boolean"),
+  handleValidationErrors,
+];
+
+export const validateUpdateSession = [
+  body("label")
+    .optional()
+    .isString()
+    .withMessage("Label must be a string"),
+  body("start_date")
+    .optional()
+    .isDate()
+    .withMessage("Start date must be a valid date"),
+  body("end_date")
+    .optional()
+    .isDate()
+    .withMessage("End date must be a valid date"),
+  body("isActive")
+    .optional()
+    .isBoolean()
+    .withMessage("Is active must be a boolean"),
+  handleValidationErrors,
+];
+
+export const validateDeleteSession = [
+  param("id")
+    .trim()
+    .notEmpty()
+    .withMessage("Session ID is required")
+    .isString()
+    .withMessage("Session ID must be a string"),
+  handleValidationErrors,
+];
+

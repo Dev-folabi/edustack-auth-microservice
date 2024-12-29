@@ -37,7 +37,7 @@ export const errorHandler = (
         // Unique constraint violation
         return res.status(409).json({
           success: false,
-          message: "Unique constraint violation",
+          message: "Data already exist",
           data: error.meta || {},
         });
 
