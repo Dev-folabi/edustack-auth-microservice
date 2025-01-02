@@ -147,13 +147,22 @@ export const studentSignUp = async (
   next: NextFunction
 ) => {
   try {
-    const { email, password, username, schoolId, ...studentData } = req.body;
+    const { email, password, username, schoolId, class_id, ...studentData } = req.body;
 
     // Validate school existence
     const school = await validateSchool(String(schoolId));
 
     if (!school) {
       return handleError(res, "School not found", 404);
+    }
+
+    // Validate class existence
+    const existClass = await prisma.school_Class.findUnique({
+      where:{id: class_id}
+    });
+
+    if (!existClass) {
+      return handleError(res, "Class not found", 404);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -173,6 +182,7 @@ export const studentSignUp = async (
       const student = await tx.student.create({
         data: {
           userId: user.id,
+          class_id,
           parentId: String(parentId) || undefined,
           dob: new Date(String(dob)),
           admission_date: new Date(String(admission_date)),

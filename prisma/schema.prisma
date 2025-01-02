@@ -70,17 +70,19 @@ model User {
 }
 
 model Student {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id])
-  admission_number  Int      @unique @default(autoincrement())
+  id                String       @id @default(cuid())
+  userId            String       @unique
+  user              User         @relation(fields: [userId], references: [id])
+  admission_number  Int          @unique @default(autoincrement())
+  class_id          String
+  class             School_Class @relation(fields: [class_id], references: [id])
   name              String
   gender            Gender
   dob               DateTime
   phone             String?
   email             String?
   address           String
-  admission_date    DateTime @default(now())
+  admission_date    DateTime     @default(now())
   religion          String?
   blood_group       String?
   father_name       String?
@@ -89,7 +91,7 @@ model Student {
   guardian_phone    String[]
   father_occupation String?
   mother_occupation String?
-  isActive          Boolean  @default(true)
+  isActive          Boolean      @default(true)
   city              String?
   state             String?
   country           String?
@@ -97,11 +99,11 @@ model Student {
   room_id           String?
   added_by          String?
   photo_url         String?
-  isStudent         Boolean  @default(true)
-  parent            Parent?  @relation(fields: [parentId], references: [id])
+  isStudent         Boolean      @default(true)
+  parent            Parent?      @relation(fields: [parentId], references: [id])
   parentId          String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 }
 
 model Staff {
@@ -146,4 +148,24 @@ model Session {
   isActive   Boolean
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model Classes {
+  id           String         @id @default(cuid())
+  label        String         @unique
+  section      String[]       @default(["a"])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  school_class School_Class[]
+}
+
+model School_Class {
+  id          String    @id @default(cuid())
+  class_id    String
+  school_id   String
+  school_name String
+  classes     Classes   @relation(fields: [class_id], references: [id])
+  Student     Student[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

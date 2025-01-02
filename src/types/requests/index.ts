@@ -38,6 +38,7 @@ export interface IUserRequest {
 // Student Request
 export interface IStudentRequest extends IUserRequest {
   schoolId: ID;
+  class_id: string;
   name: string;
   gender: Gender;
   dob: string;
@@ -95,3 +96,10 @@ export interface IUserSchoolRequest {
   userId: ID;
   schoolId: ID;
 }
+
+export interface classSchoolRequest {
+  label: string;
+  section?: string[];
+  school_id: string[];
+}
+
