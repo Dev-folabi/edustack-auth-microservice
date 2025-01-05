@@ -1,32 +1,47 @@
 import { NextFunction, Request, Response } from "express";
-import { classSchoolRequest } from "../types/requests";
 import { handleError } from "../error/errorHandler";
 import prisma from "../prisma";
 
-// Create Class
-
-// Get All Classes
+// Get All Classes for a School
 export const getAllSchoolClass = async (
-  req: Request<{ id: string }>,
+  req: Request<{ schId: string }>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const classes = await prisma.school_Class.findMany({
-      where: { school_id: req.params.id },
-      include: { classes: true },
+    const schoolId = req.params.schId;
+
+    // Validate school existence
+    const schoolExists = await prisma.school.findUnique({
+      where: { id: schoolId },
     });
+    if (!schoolExists) {
+      return handleError(res, "School not found", 404);
+    }
+
+    // Retrieve all classes for the school
+    const schoolClasses = await prisma.school_Class.findMany({
+      where: { schoolId },
+      include: {
+        classes: {
+          include: {
+            sections: true,
+          },
+        },
+      },
+    });
+
     res.status(200).json({
       success: true,
-      message: "All School classes retrieved successfully",
-      data: classes,
+      message: "All school classes retrieved successfully",
+      data: schoolClasses,
     });
   } catch (error: any) {
     next(error);
   }
 };
 
-// Get Class by ID
+// Get a Specific Class for a School by Class ID
 export const getSchoolClassById = async (
   req: Request<{ id: string }>,
   res: Response,
@@ -35,9 +50,14 @@ export const getSchoolClassById = async (
   try {
     const classId = req.params.id;
 
-    const foundClass = await prisma.classes.findUnique({
+    // Find the class and include its sections and associated school
+    const foundClass = await prisma.school_Class.findUnique({
       where: { id: classId },
-      include: { school_class: true },
+      include: {
+        classes: {
+          include: { sections: true },
+        },
+      },
     });
 
     if (!foundClass) {

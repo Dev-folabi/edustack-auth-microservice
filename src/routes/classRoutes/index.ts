@@ -23,6 +23,6 @@ router.delete("/:id", deleteClass);
 
 // School Class Routes
 router.get("/school/:id", getSchoolClassById);
-router.get("/school/all-classes/:id", getAllSchoolClass);
+router.get("/school/:schId/classes", getAllSchoolClass);
 
 export default router;

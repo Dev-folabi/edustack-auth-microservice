@@ -38,7 +38,6 @@ export interface IUserRequest {
 // Student Request
 export interface IStudentRequest extends IUserRequest {
   schoolId: ID;
-  class_id: string;
   name: string;
   gender: Gender;
   dob: string;
@@ -46,9 +45,9 @@ export interface IStudentRequest extends IUserRequest {
   address: string;
   admission_date?: string;
   religion: string;
-  blood_group ?: string;
+  blood_group?: string;
   father_name?: string;
-  mother_name ?: string;
+  mother_name?: string;
   guardian_name?: string;
   guardian_phone: string[];
   father_occupation?: string;
@@ -97,9 +96,23 @@ export interface IUserSchoolRequest {
   schoolId: ID;
 }
 
+export interface TermRequest {
+  label: string;
+  start_date: Date;
+  end_date: Date;
+}
+
+export interface SessionRequest {
+  label: string;
+  start_date: Date;
+  end_date: Date;
+  isActive: boolean;
+  terms: TermRequest[];
+}
+
 export interface classSchoolRequest {
   label: string;
-  section?: string[];
+  section: string;
   school_id: string[];
 }
 

@@ -37,6 +37,7 @@ model School {
   phone       String[]
   address     String
   userSchools UserSchool[]
+  schoolClasses School_Class[]
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -70,19 +71,17 @@ model User {
 }
 
 model Student {
-  id                String       @id @default(cuid())
-  userId            String       @unique
-  user              User         @relation(fields: [userId], references: [id])
-  admission_number  Int          @unique @default(autoincrement())
-  class_id          String
-  class             School_Class @relation(fields: [class_id], references: [id])
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id])
+  admission_number  Int      @unique @default(autoincrement())
   name              String
   gender            Gender
   dob               DateTime
   phone             String?
   email             String?
   address           String
-  admission_date    DateTime     @default(now())
+  admission_date    DateTime @default(now())
   religion          String?
   blood_group       String?
   father_name       String?
@@ -91,7 +90,7 @@ model Student {
   guardian_phone    String[]
   father_occupation String?
   mother_occupation String?
-  isActive          Boolean      @default(true)
+  isActive          Boolean  @default(true)
   city              String?
   state             String?
   country           String?
@@ -99,11 +98,11 @@ model Student {
   room_id           String?
   added_by          String?
   photo_url         String?
-  isStudent         Boolean      @default(true)
-  parent            Parent?      @relation(fields: [parentId], references: [id])
+  isStudent         Boolean  @default(true)
+  parent            Parent?  @relation(fields: [parentId], references: [id])
   parentId          String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Staff {
@@ -145,27 +144,57 @@ model Session {
   label      String   @unique
   start_date DateTime
   end_date   DateTime
-  isActive   Boolean
+  isActive   Boolean  @default(false)
+  terms      Term[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
 
+model Term {
+  id         String   @id @default(cuid())
+  label      String
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id])
+  start_date DateTime
+  end_date   DateTime
+  isActive   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([label, sessionId])
+}
+
+
 model Classes {
-  id           String         @id @default(cuid())
-  label        String         @unique
-  section      String[]       @default(["a"])
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  school_class School_Class[]
+  id           String          @id @default(cuid())
+  label        String          @unique
+  schoolClasses School_Class[] // Relates this class to schools
+  sections     Class_Section[] // Relates this class to sections
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model Class_Section {
+  id        String   @id @default(cuid())
+  label     String   // e.g., "A", "B", etc.
+  classId   String   @map("class_id")
+  classes   Classes  @relation(fields: [classId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([classId, label]) // Ensures unique sections per class
 }
 
 model School_Class {
-  id          String    @id @default(cuid())
-  class_id    String
-  school_id   String
-  school_name String
-  classes     Classes   @relation(fields: [class_id], references: [id])
-  Student     Student[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  classId   String   @map("class_id")
+  schoolId  String   @map("school_id")
+  classes   Classes  @relation(fields: [classId], references: [id])
+  schools   School   @relation(fields: [schoolId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([classId, schoolId]) // Ensures a class is uniquely tied to a school
 }
+
+
