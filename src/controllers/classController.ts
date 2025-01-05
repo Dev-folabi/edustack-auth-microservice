@@ -12,7 +12,7 @@ export const createClass = async (
   try {
     const { label, section, school_id } = req.body;
 
-    // Check if class already exists
+    // Check if the class already exists
     const existingClass = await prisma.classes.findFirst({
       where: { label },
     });
@@ -22,61 +22,52 @@ export const createClass = async (
 
     // Validate and deduplicate school IDs
     const uniqueSchoolIds = [...new Set(school_id)];
-    const invalidSchoolIds: string[] = [];
     const validSchoolData: { id: string; name: string }[] = [];
 
-    // Validate school existence and fetch school names
-    for (const sch of uniqueSchoolIds) {
-      try {
-        const school = await prisma.school.findMany();
+    // Validate school existence and fetch names
+    const schools = await prisma.school.findMany({
+      where: { id: { in: uniqueSchoolIds } },
+    });
 
-        // Access the array of schools in the response
-        const schoolArray = school;
-
-        // if (!Array.isArray(schoolArray)) {
-        //   return handleError(res, `An error occurred`, 500);
-        // }
-
-        // Check if school exists in the response array and get its name
-        const foundSchool = schoolArray.find(
-          (s: { id: string }) => s.id === sch
-        );
-        if (foundSchool) {
-          validSchoolData.push({ id: foundSchool.id, name: foundSchool.name });
-        } else {
-          invalidSchoolIds.push(sch);
-        }
-      } catch (error) {
-        return handleError(res, `Error fetching school details`, 500);
-      }
-    }
+    const invalidSchoolIds = uniqueSchoolIds.filter(
+      (id) => !schools.some((school) => school.id === id)
+    );
 
     if (invalidSchoolIds.length > 0) {
-      return handleError(res, `Schools doesn't exsit`, 400);
+      return handleError(res, "Invalid school provided", 400);
     }
 
-    // Create class and associate it with schools
+    schools.forEach((school) => {
+      validSchoolData.push({ id: school.id, name: school.name });
+    });
+
+    // Create class, associate with schools, and add sections
     const result = await prisma.$transaction(async (tx) => {
       // Create the class
       const createdClass = await tx.classes.create({
-        data: { label, section },
+        data: { label },
       });
 
-      // Create associations with schools, including school names
-      const schoolClassData = validSchoolData.map((school) => ({
-        class_id: createdClass.id,
-        school_id: school.id,
-        school_name: school.name,
-      }));
+      // Create sections (can handle multiple sections)
+      const sections = section.split(",").map((sec) => sec.trim());
+      const createdSections = await tx.class_Section.createMany({
+        data: sections.map((sec) => ({
+          label: sec,
+          classId: createdClass.id,
+        })),
+      });
 
+      // Create school associations
       await tx.school_Class.createMany({
-        data: schoolClassData,
+        data: validSchoolData.map((school) => ({
+          classId: createdClass.id,
+          schoolId: school.id,
+        })),
       });
 
-      return createdClass;
+      return { createdClass, createdSections };
     });
 
-    // Success response
     res.status(201).json({
       success: true,
       message: "Class created successfully",
@@ -95,7 +86,10 @@ export const getAllClasses = async (
 ) => {
   try {
     const classes = await prisma.classes.findMany({
-      include: { school_class: true },
+      include: {
+        schoolClasses: true,
+        sections: true,
+      },
     });
     res.status(200).json({
       success: true,
@@ -118,7 +112,10 @@ export const getClassById = async (
 
     const foundClass = await prisma.classes.findUnique({
       where: { id: classId },
-      include: { school_class: true },
+      include: {
+        schoolClasses: true,
+        sections: true,
+      },
     });
 
     if (!foundClass) {
@@ -145,58 +142,38 @@ export const updateClass = async (
     const { id: classId } = req.params;
     const { label, section, school_id } = req.body;
 
-    // Fetch existing class and its associated schools
+    // Fetch existing class
     const existingClass = await prisma.classes.findUnique({
       where: { id: classId },
-      include: { school_class: true },
+      include: { schoolClasses: true, sections: true },
     });
 
     if (!existingClass) {
       return handleError(res, "Class not found", 404);
     }
 
-    const existingSchoolIds = existingClass.school_class.map(
-      (sc) => sc.school_id
+    const existingSchoolIds = existingClass.schoolClasses.map(
+      (sc) => sc.schoolId
     );
     const uniqueSchoolIds = [...new Set(school_id ?? [])];
 
-    // Validate the provided school IDs and fetch their names
+    // Validate the provided school IDs
+    const schools = await prisma.school.findMany({
+      where: { id: { in: uniqueSchoolIds } },
+    });
 
-    const invalidSchoolIds: string[] = [];
-    const validSchoolData: { id: string; name: string }[] = [];
-
-    for (const sch of uniqueSchoolIds) {
-      try {
-        const school = await prisma.school.findMany();
-
-        // Access the array of schools in the response
-        const schoolArray = school;
-
-        if (!Array.isArray(schoolArray)) {
-          return handleError(res, `An error occurred`, 500);
-        }
-
-        // Check if school exists in the response array and get its name
-        const foundSchool = schoolArray.find(
-          (s: { id: string }) => s.id === sch
-        );
-        if (foundSchool) {
-          validSchoolData.push({ id: foundSchool.id, name: foundSchool.name });
-        } else {
-          invalidSchoolIds.push(sch);
-        }
-      } catch (error) {
-        return handleError(
-          res,
-          `Error fetching school details for ID: ${sch}`,
-          500
-        );
-      }
-    }
+    const invalidSchoolIds = uniqueSchoolIds.filter(
+      (id) => !schools.some((school) => school.id === id)
+    );
 
     if (invalidSchoolIds.length > 0) {
-      return handleError(res, `Schools doesn't exist`, 400);
+      return handleError(res, "Invalid school provided", 400);
     }
+
+    const validSchoolData = schools.map((school) => ({
+      id: school.id,
+      name: school.name,
+    }));
 
     // Determine schools to add and remove
     const schoolsToAdd = validSchoolData.filter(
@@ -211,19 +188,29 @@ export const updateClass = async (
       // Update class details
       const updated = await tx.classes.update({
         where: { id: classId },
-        data: {
-          label: label ?? existingClass.label,
-          section: section ?? existingClass.section,
-        },
+        data: { label: label ?? existingClass.label },
       });
+
+      // Update sections
+      if (section) {
+        const sections = section.split(",").map((sec) => sec.trim());
+        await tx.class_Section.deleteMany({
+          where: { classId },
+        });
+        await tx.class_Section.createMany({
+          data: sections.map((sec) => ({
+            label: sec,
+            classId,
+          })),
+        });
+      }
 
       // Add new school associations
       if (schoolsToAdd.length > 0) {
         await tx.school_Class.createMany({
           data: schoolsToAdd.map((school) => ({
-            class_id: classId,
-            school_id: school.id,
-            school_name: school.name, // Include the school name
+            classId,
+            schoolId: school.id,
           })),
         });
       }
@@ -232,8 +219,8 @@ export const updateClass = async (
       if (schoolsToRemove.length > 0) {
         await tx.school_Class.deleteMany({
           where: {
-            class_id: classId,
-            school_id: { in: schoolsToRemove },
+            classId,
+            schoolId: { in: schoolsToRemove },
           },
         });
       }
@@ -241,7 +228,6 @@ export const updateClass = async (
       return updated;
     });
 
-    // Success response
     res.status(200).json({
       success: true,
       message: "Class updated successfully",
@@ -269,9 +255,13 @@ export const deleteClass = async (
       return handleError(res, "Class not found", 404);
     }
 
-    // Delete associated relationships first, if applicable
+    // Delete associated relationships first
     await prisma.school_Class.deleteMany({
-      where: { class_id: classId },
+      where: { classId },
+    });
+
+    await prisma.class_Section.deleteMany({
+      where: { classId },
     });
 
     await prisma.classes.delete({

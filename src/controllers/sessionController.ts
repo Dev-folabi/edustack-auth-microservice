@@ -1,43 +1,78 @@
 import { NextFunction, Request, Response } from "express";
 import prisma from "../prisma";
-import { Session } from "@prisma/client";
+import { SessionRequest } from "../types/requests/index";
 import { handleError } from "../error/errorHandler";
 
-// Create Session
-export const createSession = async (
-  req: Request<{}, {}, Session>,
+// Create Session and Terms
+export const createSessionWithTerms = async (
+  req: Request<{}, {}, SessionRequest>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { start_date, end_date, ...data } = req.body;
+    const { label, start_date, end_date, isActive, terms } = req.body;
 
     // Ensure start_date is earlier than end_date
     if (new Date(start_date) >= new Date(end_date)) {
-      return handleError(res, "start_date must be earlier than end_date", 400);
+      return handleError(res, "start date must be earlier than end date", 400);
     }
 
+    // Ensure there are terms provided
+    if (!terms || terms.length === 0) {
+      return handleError(res, "At least one term must be provided", 400);
+    }
+
+    // Ensure terms start and end dates are valid
+    for (const term of terms) {
+      if (new Date(term.start_date) >= new Date(term.end_date)) {
+        return handleError(res, `Term ${term.label} has invalid dates`, 400);
+      }
+    }
+
+    // Start a transaction to ensure atomicity (Session and Terms are created together)
     const result = await prisma.$transaction(async (tx) => {
-      if (data.isActive) {
+      // Deactivate any active session if new session is active
+      if (isActive) {
         await tx.session.updateMany({
           where: { isActive: true },
           data: { isActive: false },
         });
       }
 
-      return tx.session.create({
+      // Create the session
+      const session = await tx.session.create({
         data: {
+          label,
           start_date: new Date(start_date),
           end_date: new Date(end_date),
-          ...data,
+          isActive,
         },
       });
+
+      // Create the terms for the session
+      const createdTerms = await Promise.all(
+        terms.map((term) =>
+          tx.term.create({
+            data: {
+              sessionId: session.id,
+              label: `${session.label} ${term.label}`,
+              start_date: new Date(term.start_date),
+              end_date: new Date(term.end_date),
+            },
+          })
+        )
+      );
+
+      return { session, createdTerms };
     });
 
     res.status(201).json({
       success: true,
-      message: "Session created successfully",
-      data: result,
+      message: "Session and terms created successfully",
+      data: {
+        session: result.session,
+        terms: result.createdTerms,
+      },
     });
   } catch (error: any) {
     next(error);
@@ -53,6 +88,9 @@ export const getSession = async (
   try {
     const result = await prisma.session.findMany({
       where: { isActive: true },
+      include: {
+        terms: true, // Include terms for active session
+      },
     });
 
     res.status(200).json({
@@ -72,7 +110,11 @@ export const getAllSessions = async (
   next: NextFunction
 ) => {
   try {
-    const result = await prisma.session.findMany();
+    const result = await prisma.session.findMany({
+      include: {
+        terms: true,
+      },
+    });
 
     res.status(200).json({
       success: true,
@@ -93,6 +135,9 @@ export const getSessionById = async (
   try {
     const result = await prisma.session.findUnique({
       where: { id: req.params.id },
+      include: {
+        terms: true,
+      },
     });
 
     if (!result) {
@@ -110,41 +155,84 @@ export const getSessionById = async (
 };
 
 // Update Session
-export const updateSession = async (
-  req: Request<{ id: string }, {}, Partial<Session>>,
+export const updateSessionWithTerms = async (
+  req: Request<{ id: string }, {}, Partial<SessionRequest>>,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { start_date, end_date, ...data } = req.body;
+    const { label, start_date, end_date, isActive, terms } = req.body;
 
     // Ensure start_date is earlier than end_date
     if (start_date && end_date && new Date(start_date) >= new Date(end_date)) {
       return handleError(res, "start_date must be earlier than end_date", 400);
     }
 
+    // Ensure terms start and end dates are valid
+    if (terms) {
+      for (const term of terms) {
+        if (new Date(term.start_date) >= new Date(term.end_date)) {
+          return handleError(res, `Term ${term.label} has invalid dates`, 400);
+        }
+      }
+    }
+
     const result = await prisma.$transaction(async (tx) => {
-      if (data.isActive) {
+      if (isActive) {
+        // Deactivate any active session if new session is active
         await tx.session.updateMany({
           where: { isActive: true },
           data: { isActive: false },
         });
       }
 
-      return tx.session.update({
+      // Update the session
+      const updatedSession = await tx.session.update({
         where: { id: req.params.id },
         data: {
+          ...(label && { label }),
           ...(start_date && { start_date: new Date(start_date) }),
           ...(end_date && { end_date: new Date(end_date) }),
-          ...data,
+          isActive,
         },
       });
+
+      // Create or update terms for the session
+      const updatedTerms = terms
+        ? await Promise.all(
+            terms.map((term) => {
+              return tx.term.upsert({
+                where: {
+                  label_sessionId: {
+                    label: `${updatedSession.label} ${term.label}`,
+                    sessionId: updatedSession.id,
+                  },
+                },
+                create: {
+                  sessionId: updatedSession.id,
+                  label: term.label,
+                  start_date: new Date(term.start_date),
+                  end_date: new Date(term.end_date),
+                },
+                update: {
+                  start_date: new Date(term.start_date),
+                  end_date: new Date(term.end_date),
+                },
+              });
+            })
+          )
+        : [];
+
+      return { updatedSession, updatedTerms };
     });
 
     res.status(200).json({
       success: true,
-      message: "Session updated successfully",
-      data: result,
+      message: "Session and terms updated successfully",
+      data: {
+        session: result.updatedSession,
+        terms: result.updatedTerms,
+      },
     });
   } catch (error: any) {
     next(error);
@@ -160,6 +248,9 @@ export const deleteSession = async (
   try {
     const session = await prisma.session.findUnique({
       where: { id: req.params.id },
+      include: {
+        terms: true,
+      },
     });
 
     if (!session) {
@@ -170,13 +261,66 @@ export const deleteSession = async (
       return handleError(res, "Cannot delete an active session", 400);
     }
 
-    await prisma.session.delete({
-      where: { id: session.id },
+    // Start a transaction to delete the session and its related terms
+    await prisma.$transaction(async (tx) => {
+      // Delete terms associated with the session
+      await tx.term.deleteMany({
+        where: { sessionId: session.id },
+      });
+
+      // Delete the session
+      await tx.session.delete({
+        where: { id: session.id },
+      });
     });
 
     res.status(200).json({
       success: true,
-      message: "Session deleted successfully",
+      message: "Session and associated terms deleted successfully",
+    });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+// Get All Term
+export const getAllTerms = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const terms = await prisma.term.findMany();
+
+    res.status(200).json({
+      success: true,
+      message: "All terms retrieved successfully",
+      data: terms,
+    });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+// Get Term By ID
+export const getTermById = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const term = await prisma.term.findUnique({
+      where: { id: req.params.id },
+    });
+
+    if (!term) {
+      return handleError(res, "Term doesn't exist", 404);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Term retrieved successfully",
+      data: term,
     });
   } catch (error: any) {
     next(error);

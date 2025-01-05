@@ -216,11 +216,6 @@ export const validateStudentSignUp = [
     .withMessage("School ID is required")
     .isString()
     .withMessage("School ID must be string"),
-    body("class_id ")
-    .notEmpty()
-    .withMessage("Class ID is required")
-    .isString()
-    .withMessage("Class ID must be string"),
   body("name")
     .notEmpty()
     .withMessage("Name is required")
@@ -238,10 +233,7 @@ export const validateStudentSignUp = [
     .optional()
     .isDate()
     .withMessage("Date of birth must be a valid date"),
-  body("phone")
-    .optional()
-    .isString()
-    .withMessage("Phone must be a string"),
+  body("phone").optional().isString().withMessage("Phone must be a string"),
   body("address")
     .notEmpty()
     .withMessage("Address is required")
@@ -373,7 +365,7 @@ export const validateCreateSession = [
     .notEmpty()
     .withMessage("Start date is required")
     .isDate()
-    .withMessage("Start date must be a valid date"),
+    .withMessage("End date must be a valid date"),
   body("end_date")
     .trim()
     .notEmpty()
@@ -384,14 +376,26 @@ export const validateCreateSession = [
     .optional()
     .isBoolean()
     .withMessage("Is active must be a boolean"),
+  body("terms")
+    .isArray({ min: 1 })
+    .withMessage("At least one term must be provided")
+    .custom((terms) => {
+      terms.forEach((term: any) => {
+        if (!term.label) throw new Error("Each term must have a label");
+        if (!term.start_date || !term.end_date)
+          throw new Error("Each term must have start and end dates");
+        if (new Date(term.start_date) >= new Date(term.end_date))
+          throw new Error(
+            `Term "${term.label}" has invalid dates: start_date must be earlier than end_date`
+          );
+      });
+      return true;
+    }),
   handleValidationErrors,
 ];
 
 export const validateUpdateSession = [
-  body("label")
-    .optional()
-    .isString()
-    .withMessage("Label must be a string"),
+  body("label").optional().isString().withMessage("Label must be a string"),
   body("start_date")
     .optional()
     .isDate()
@@ -404,6 +408,22 @@ export const validateUpdateSession = [
     .optional()
     .isBoolean()
     .withMessage("Is active must be a boolean"),
+  body("terms")
+    .optional()
+    .isArray()
+    .withMessage("Terms must be an array")
+    .custom((terms) => {
+      terms.forEach((term: any) => {
+        if (!term.label) throw new Error("Each term must have a label");
+        if (!term.start_date || !term.end_date)
+          throw new Error("Each term must have start and end dates");
+        if (new Date(term.start_date) >= new Date(term.end_date))
+          throw new Error(
+            `Term "${term.label}" has invalid dates: start_date must be earlier than end_date`
+          );
+      });
+      return true;
+    }),
   handleValidationErrors,
 ];
 
@@ -426,14 +446,14 @@ export const validateCreateClass = [
     .withMessage("Label must be a string"),
   body("section")
     .optional()
-    .isArray()
-    .withMessage("Section must be an array")
-    .custom((value: unknown[]) => {
-      if (!value.every((item) => typeof item === "string")) {
-        throw new Error("Each section must be a string");
-      }
-      return true;
-    }),
+    .isString()
+    .withMessage("Section must be an string"),
+  // .custom((value: unknown[]) => {
+  //   if (!value.every((item) => typeof item === "string")) {
+  //     throw new Error("Each section must be a string");
+  //   }
+  //   return true;
+  // }),
   body("school_id")
     .notEmpty()
     .withMessage("School IDs are required")
@@ -458,14 +478,14 @@ export const validateUpdateClass = [
   body("label").optional().isString().withMessage("Label must be a string"),
   body("section")
     .optional()
-    .isArray()
-    .withMessage("Section must be an array")
-    .custom((value: unknown[]) => {
-      if (!value.every((item) => typeof item === "string")) {
-        throw new Error("Each section must be a string");
-      }
-      return true;
-    }),
+    .isString()
+    .withMessage("Section must be an string"),
+  // .custom((value: unknown[]) => {
+  //   if (!value.every((item) => typeof item === "string")) {
+  //     throw new Error("Each section must be a string");
+  //   }
+  //   return true;
+  // }),
   body("school_id")
     .optional()
     .isArray()
@@ -478,4 +498,3 @@ export const validateUpdateClass = [
     }),
   handleValidationErrors,
 ];
-
