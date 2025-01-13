@@ -44,6 +44,8 @@ export interface IStudentRequest extends IUserRequest {
   phone?: string;
   address: string;
   admission_date?: string;
+  classId: string;
+  sectionId: string;
   religion: string;
   blood_group?: string;
   father_name?: string;
@@ -116,3 +118,24 @@ export interface classSchoolRequest {
   school_id: string[];
 }
 
+export interface TransferStudentRequest {
+  studentId: string[];
+  fromSchoolId: string;
+  toSchoolId: string;
+  transferReason?: string;
+  transferDate: Date;
+}
+
+export interface EnrollStudentRequest {
+  classId: string;
+  sectionId: string;
+}
+
+export interface PromoteStudentRequest {
+  studentId: string[];
+  fromClassId: string;
+  toClassId: string;
+  sectionId: string;
+  termId?: string;
+  promotedBy: string;
+}

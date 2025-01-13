@@ -498,3 +498,74 @@ export const validateUpdateClass = [
     }),
   handleValidationErrors,
 ];
+
+export const validateTransferStudent = [
+  body("studentId")
+    .notEmpty()
+    .withMessage("Student IDs are required")
+    .isArray()
+    .withMessage("Student IDs must be an array")
+    .custom((value: unknown[]) => {
+      if (!value.every((item) => typeof item === "string")) {
+        throw new Error("Each student ID must be a string");
+      }
+      return true;
+    }),
+  body("fromSchoolId")
+    .notEmpty()
+    .withMessage("From school ID is required")
+    .isString()
+    .withMessage("From school ID must be a string"),
+  body("toSchoolId")
+    .notEmpty()
+    .withMessage("To school ID is required")
+    .isString()
+    .withMessage("To school ID must be a string"),
+  body("transferReason").optional().isString().withMessage("Transfer reason must be a string"),
+  handleValidationErrors,
+];
+
+export const validateEnrollStudent = [
+  body("classId")
+    .notEmpty()
+    .withMessage("Class ID is required")
+    .isString()
+    .withMessage("Class ID must be a string"),
+  body("sectionId")
+    .notEmpty()
+    .withMessage("Section ID is required")
+    .isString()
+    .withMessage("Section ID must be a string"),
+  handleValidationErrors,
+];
+
+export const validatePromoteStudent = [
+  body("studentId")
+    .notEmpty()
+    .withMessage("Student IDs are required")
+    .isArray()
+    .withMessage("Student IDs must be an array")
+    .custom((value: unknown[]) => {
+      if (!value.every((item) => typeof item === "string")) {
+        throw new Error("Each student ID must be a string");
+      }
+      return true;
+    }),
+  body("fromClassId")
+    .notEmpty()
+    .withMessage("From class ID is required")
+    .isString()
+    .withMessage("From class ID must be a string"),
+  body("toClassId")
+    .notEmpty()
+    .withMessage("To class ID is required")
+    .isString()
+    .withMessage("To class ID must be a string"),
+  body("sectionId")
+    .notEmpty()
+    .withMessage("Section ID is required")
+    .isString()
+    .withMessage("Section ID must be a string"),
+  handleValidationErrors,
+];
+

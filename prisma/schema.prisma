@@ -19,6 +19,12 @@ enum Gender {
   others
 }
 
+enum EnrollStatus {
+  enrolled
+  promoted
+  transferred
+}
+
 enum UserRole {
   student
   admin
@@ -31,17 +37,20 @@ enum UserRole {
 }
 
 model School {
-  id          String       @id @default(cuid())
-  name        String       @unique
-  email       String
-  phone       String[]
-  address     String
-  userSchools UserSchool[]
-  schoolClasses School_Class[]
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id            String            @id @default(cuid())
+  name          String            @unique
+  email         String
+  phone         String[]          
+  address       String
+  userSchools   UserSchool[]
+  classes       Classes[]
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  fromTransfers StudentTransfer[] @relation("FromSchoolRelation")
+  toTransfers   StudentTransfer[] @relation("ToSchoolRelation")
 }
+
 
 model UserSchool {
   id        String    @id @default(cuid())
@@ -103,6 +112,10 @@ model Student {
   parentId          String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  student_enrolled  StudentEnrollment[]
+  promotion_history PromotionHistory[]
+  student_transfer  StudentTransfer[]
 }
 
 model Staff {
@@ -148,53 +161,105 @@ model Session {
   terms      Term[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  student_enrolled  StudentEnrollment[]
+  promotion_history PromotionHistory[]
 }
 
 model Term {
-  id         String   @id @default(cuid())
-  label      String
-  sessionId  String
-  session    Session  @relation(fields: [sessionId], references: [id])
-  start_date DateTime
-  end_date   DateTime
-  isActive   Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                String              @id @default(cuid())
+  label             String
+  sessionId         String
+  session           Session             @relation(fields: [sessionId], references: [id])
+  start_date        DateTime
+  end_date          DateTime
+  isActive          Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  student_enrolled  StudentEnrollment[]
+  promotion_history PromotionHistory[]
 
   @@unique([label, sessionId])
 }
 
-
 model Classes {
-  id           String          @id @default(cuid())
-  label        String          @unique
-  schoolClasses School_Class[] // Relates this class to schools
-  sections     Class_Section[] // Relates this class to sections
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  id        String   @id @default(cuid())
+  label     String
+  schoolId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student_enrolled             StudentEnrollment[]
+  from_class_promotion_history PromotionHistory[]  @relation("FromClassRelation")
+  to_class_promotion_history   PromotionHistory[]  @relation("ToClassRelation")
+  sections                     Class_Section[]
+  schools                      School              @relation(fields: [schoolId], references: [id])
+
+  @@unique([label, schoolId])
 }
 
 model Class_Section {
   id        String   @id @default(cuid())
-  label     String   // e.g., "A", "B", etc.
+  label     String   @default("a")
   classId   String   @map("class_id")
-  classes   Classes  @relation(fields: [classId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([classId, label]) // Ensures unique sections per class
-}
+  student_enrolled StudentEnrollment[]
+  classes          Classes             @relation(fields: [classId], references: [id])
 
-model School_Class {
-  id        String   @id @default(cuid())
-  classId   String   @map("class_id")
-  schoolId  String   @map("school_id")
-  classes   Classes  @relation(fields: [classId], references: [id])
-  schools   School   @relation(fields: [schoolId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([classId, schoolId]) // Ensures a class is uniquely tied to a school
+  @@unique([classId, label])
 }
 
 
+model StudentEnrollment {
+  id        String       @id @default(cuid())
+  studentId String
+  classId   String
+  sectionId String
+  sessionId String
+  termId    String?
+  status    EnrollStatus
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // Relations
+  student Student       @relation(fields: [studentId], references: [id])
+  class   Classes       @relation(fields: [classId], references: [id])
+  section Class_Section @relation(fields: [sectionId], references: [id])
+  session Session       @relation(fields: [sessionId], references: [id])
+  term    Term?         @relation(fields: [termId], references: [id])
+}
+
+model PromotionHistory {
+  id          String   @id @default(cuid())
+  studentId   String
+  fromClassId String
+  toClassId   String
+  sessionId   String
+  termId      String?
+  promotedBy  String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  student   Student @relation(fields: [studentId], references: [id])
+  fromClass Classes @relation("FromClassRelation", fields: [fromClassId], references: [id])
+  toClass   Classes @relation("ToClassRelation", fields: [toClassId], references: [id])
+  session   Session @relation(fields: [sessionId], references: [id])
+  term      Term?   @relation(fields: [termId], references: [id])
+}
+
+model StudentTransfer {
+  id             String   @id @default(cuid())
+  studentId      String
+  fromSchoolId   String
+  toSchoolId     String
+  transferReason String?
+  transferDate   DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  // Relations
+  student    Student @relation(fields: [studentId], references: [id])
+  fromSchool School  @relation("FromSchoolRelation", fields: [fromSchoolId], references: [id])
+  toSchool   School  @relation("ToSchoolRelation", fields: [toSchoolId], references: [id])
+}

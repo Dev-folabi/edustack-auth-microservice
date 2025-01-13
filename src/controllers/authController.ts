@@ -9,7 +9,7 @@ import {
 } from "../types/requests";
 import { generateToken } from "../function/token";
 import { UserRole } from "@prisma/client";
-import { validateSchool } from "../function/schoolFunctions";
+import { findActiveSession, validateSchool } from "../function/schoolFunctions";
 import { handleError } from "../error/errorHandler";
 
 // Super Admin Sign Up
@@ -158,9 +158,22 @@ export const studentSignUp = async (
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const { parentId, dob, admission_date, ...studentDataWithoutId } =
-      studentData;
+    const {
+      parentId,
+      dob,
+      admission_date,
+      classId,
+      sectionId,
+      ...studentDataWithoutId
+    } = studentData;
 
+    const session = await findActiveSession(res);
+    if (!session) return;
+
+    const termId = session.terms.find((term) => term.isActive)?.id;
+    if (!termId) {
+      return handleError(res, "No active term in session", 400);
+    }
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: { email, password: hashedPassword, username },
@@ -180,6 +193,17 @@ export const studentSignUp = async (
         },
       });
 
+      // Enroll student in class
+      await prisma.studentEnrollment.create({
+        data: {
+          studentId: student.id,
+          classId,
+          sectionId,
+          sessionId: session?.id,
+          termId: termId,
+          status: "enrolled",
+        },
+      });
       return { user, userSchools, student };
     });
 

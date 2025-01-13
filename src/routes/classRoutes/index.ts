@@ -6,7 +6,6 @@ import {
   deleteClass,
   createClass,
 } from "../../controllers/classController";
-import { getAllSchoolClass, getSchoolClassById } from "../../controllers/schoolClassController";
 import {
   validateCreateClass,
   validateUpdateClass,
@@ -20,9 +19,5 @@ router.get("/", getAllClasses);
 router.get("/:id", getClassById);
 router.put("/:id", validateUpdateClass, updateClass);
 router.delete("/:id", deleteClass);
-
-// School Class Routes
-router.get("/school/:id", getSchoolClassById);
-router.get("/school/:schId/classes", getAllSchoolClass);
 
 export default router;
