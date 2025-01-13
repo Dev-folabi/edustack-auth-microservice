@@ -85,12 +85,6 @@ export const getAllSchools = async (
     if (!authHeader)
       return handleError(res, "Authorization header is missing", 401);
 
-    //const userId = getIdFromToken(authHeader);
-
-    // if (userId) {
-    //   return handleError(res, "No schools found", 400);
-    // }
-
     const schools = await prisma.school.findMany();
 
     if (!schools.length) {
