@@ -14,7 +14,7 @@ export const createSessionWithTerms = async (
 
     // Ensure start_date is earlier than end_date
     if (new Date(start_date) >= new Date(end_date)) {
-      return handleError(res, "start date must be earlier than end date", 400);
+      return handleError(res, "Start date must be earlier than end date", 400);
     }
 
     // Ensure there are terms provided
@@ -22,16 +22,19 @@ export const createSessionWithTerms = async (
       return handleError(res, "At least one term must be provided", 400);
     }
 
-    // Ensure terms start and end dates are valid
+    // Ensure terms' start and end dates are valid
     for (const term of terms) {
       if (new Date(term.start_date) >= new Date(term.end_date)) {
         return handleError(res, `Term ${term.label} has invalid dates`, 400);
       }
     }
 
+    // Get the current date
+    const currentDate = new Date();
+
     // Start a transaction to ensure atomicity (Session and Terms are created together)
     const result = await prisma.$transaction(async (tx) => {
-      // Deactivate any active session if new session is active
+      // Deactivate any active session if a new session is active
       if (isActive) {
         await tx.session.updateMany({
           where: { isActive: true },
@@ -51,16 +54,21 @@ export const createSessionWithTerms = async (
 
       // Create the terms for the session
       const createdTerms = await Promise.all(
-        terms.map((term) =>
-          tx.term.create({
+        terms.map((term) => {
+          const isActiveTerm =
+            new Date(term.start_date) <= currentDate &&
+            new Date(term.end_date) >= currentDate;
+
+          return tx.term.create({
             data: {
               sessionId: session.id,
               label: `${session.label} ${term.label}`,
               start_date: new Date(term.start_date),
               end_date: new Date(term.end_date),
+              isActive: isActiveTerm,
             },
-          })
-        )
+          });
+        })
       );
 
       return { session, createdTerms };

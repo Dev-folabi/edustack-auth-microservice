@@ -27,6 +27,7 @@
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
     "morgan": "^1.10.0",
+    "node-cron": "^3.0.3",
     "validator": "^13.12.0"
   },
   "devDependencies": {
@@ -39,6 +40,7 @@
     "@types/lodash": "^4.17.13",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.10.1",
+    "@types/node-cron": "^3.0.11",
     "@types/validator": "^13.12.2",
     "@typescript-eslint/eslint-plugin": "^8.18.1",
     "@typescript-eslint/parser": "^8.18.1",
