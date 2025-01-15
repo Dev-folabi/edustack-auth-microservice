@@ -76,6 +76,7 @@ export const staffSignUp = async (
       photo_url,
       qualification,
       notes,
+      section_id,
     } = req.body;
 
     // Hash password
@@ -120,6 +121,7 @@ export const staffSignUp = async (
           photo_url,
           qualification,
           notes,
+          section_id,
         },
       });
     });

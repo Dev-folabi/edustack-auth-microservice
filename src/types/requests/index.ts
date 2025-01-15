@@ -81,6 +81,7 @@ export interface IStaffRequest extends IUserRequest {
   isActive?: boolean;
   qualification?: string;
   notes?: string;
+  section_id?: string;
 }
 
 // Parent Request
@@ -127,6 +128,7 @@ export interface TransferStudentRequest {
 }
 
 export interface EnrollStudentRequest {
+  studentId: string;
   classId: string;
   sectionId: string;
 }

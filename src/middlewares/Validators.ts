@@ -190,6 +190,7 @@ export const validateStaffSignUp = [
     .isString()
     .withMessage("Qualification must be a string"),
   body("notes").optional().isString().withMessage("Notes must be a string"),
+  body("section_id").optional().isString().withMessage("Section Id must be a string"),
 
   handleValidationErrors,
 ];
@@ -216,6 +217,11 @@ export const validateStudentSignUp = [
     .withMessage("School ID is required")
     .isString()
     .withMessage("School ID must be string"),
+  body("classId")
+    .notEmpty()
+    .withMessage("Class ID is required")
+    .isString()
+    .withMessage("Class ID must be a string"),
   body("name")
     .notEmpty()
     .withMessage("Name is required")
@@ -521,11 +527,19 @@ export const validateTransferStudent = [
     .withMessage("To school ID is required")
     .isString()
     .withMessage("To school ID must be a string"),
-  body("transferReason").optional().isString().withMessage("Transfer reason must be a string"),
+  body("transferReason")
+    .optional()
+    .isString()
+    .withMessage("Transfer reason must be a string"),
   handleValidationErrors,
 ];
 
 export const validateEnrollStudent = [
+  body("studentId")
+    .notEmpty()
+    .withMessage("Student ID is required")
+    .isString()
+    .withMessage("Student ID must be a string"),
   body("classId")
     .notEmpty()
     .withMessage("Class ID is required")
@@ -568,4 +582,3 @@ export const validatePromoteStudent = [
     .withMessage("Section ID must be a string"),
   handleValidationErrors,
 ];
-

@@ -4,6 +4,7 @@ import morgan from "morgan";
 import api from "./routes/api";
 import prisma from "./prisma";
 import { errorHandler } from "./error/errorHandler";
+import "./function/cronJob";
 
 const app = express();
 
