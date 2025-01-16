@@ -100,9 +100,11 @@ export interface IUserSchoolRequest {
 }
 
 export interface TermRequest {
+  id?: string;
   label: string;
   start_date: Date;
   end_date: Date;
+  isActive: boolean;
 }
 
 export interface SessionRequest {

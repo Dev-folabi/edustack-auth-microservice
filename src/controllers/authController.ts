@@ -176,6 +176,25 @@ export const studentSignUp = async (
     if (!termId) {
       return handleError(res, "No active term in session", 400);
     }
+
+    // Check if student is already enrolled
+    const existingStudent = await prisma.student.findFirst({
+      where: { email },
+    });
+
+    if (existingStudent) {
+      return handleError(res, "Student already exists", 400);
+    }
+
+    // validate section existence in class
+    const section = await prisma.class_Section.findFirst({
+      where: { id: sectionId, classId },
+    });
+
+    if (!section) {
+      return handleError(res, "Section not found in class", 404);
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: { email, password: hashedPassword, username },
@@ -196,7 +215,7 @@ export const studentSignUp = async (
       });
 
       // Enroll student in class
-      await prisma.studentEnrollment.create({
+      await tx.studentEnrollment.create({
         data: {
           studentId: student.id,
           classId,

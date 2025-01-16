@@ -95,7 +95,7 @@ export const getAllClasses = async (
       where: {
         ...(schoolId && { schoolId: String(schoolId) }),
         ...(search && {
-          name: {
+          label: {
             contains: search as string,
             mode: "insensitive",
           },

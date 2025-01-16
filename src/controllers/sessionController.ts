@@ -12,63 +12,44 @@ export const createSessionWithTerms = async (
   try {
     const { label, start_date, end_date, isActive, terms } = req.body;
 
-    // Ensure start_date is earlier than end_date
     if (new Date(start_date) >= new Date(end_date)) {
-      return handleError(res, "Start date must be earlier than end date", 400);
+      return handleError(res, "The session's start date must be earlier than its end date", 400);
     }
 
-    // Ensure there are terms provided
     if (!terms || terms.length === 0) {
-      return handleError(res, "At least one term must be provided", 400);
+      return handleError(res, "At least one term must be provided for the session", 400);
     }
 
-    // Ensure terms' start and end dates are valid
-    for (const term of terms) {
+    terms.forEach((term) => {
       if (new Date(term.start_date) >= new Date(term.end_date)) {
-        return handleError(res, `Term ${term.label} has invalid dates`, 400);
+        throw new Error(`Term '${term.label}' has invalid start and end dates`);
       }
-    }
+    });
 
-    // Get the current date
     const currentDate = new Date();
 
-    // Start a transaction to ensure atomicity (Session and Terms are created together)
     const result = await prisma.$transaction(async (tx) => {
-      // Deactivate any active session if a new session is active
       if (isActive) {
-        await tx.session.updateMany({
-          where: { isActive: true },
-          data: { isActive: false },
-        });
+        await tx.session.updateMany({ where: { isActive: true }, data: { isActive: false } });
       }
 
-      // Create the session
       const session = await tx.session.create({
-        data: {
-          label,
-          start_date: new Date(start_date),
-          end_date: new Date(end_date),
-          isActive,
-        },
+        data: { label, start_date: new Date(start_date), end_date: new Date(end_date), isActive },
       });
 
-      // Create the terms for the session
       const createdTerms = await Promise.all(
-        terms.map((term) => {
-          const isActiveTerm =
-            new Date(term.start_date) <= currentDate &&
-            new Date(term.end_date) >= currentDate;
-
-          return tx.term.create({
+        terms.map((term) =>
+          tx.term.create({
             data: {
               sessionId: session.id,
-              label: `${session.label} ${term.label}`,
+              label: `${term.label}`,
               start_date: new Date(term.start_date),
               end_date: new Date(term.end_date),
-              isActive: isActiveTerm,
+              isActive:
+                new Date(term.start_date) <= currentDate && new Date(term.end_date) >= currentDate,
             },
-          });
-        })
+          })
+        )
       );
 
       return { session, createdTerms };
@@ -77,15 +58,13 @@ export const createSessionWithTerms = async (
     res.status(201).json({
       success: true,
       message: "Session and terms created successfully",
-      data: {
-        session: result.session,
-        terms: result.createdTerms,
-      },
+      data: result,
     });
   } catch (error: any) {
     next(error);
   }
 };
+
 
 // Get Active Session
 export const getSession = async (
@@ -170,13 +149,14 @@ export const updateSessionWithTerms = async (
 ) => {
   try {
     const { label, start_date, end_date, isActive, terms } = req.body;
+    const sessionId = req.params.id;
 
     // Ensure start_date is earlier than end_date
     if (start_date && end_date && new Date(start_date) >= new Date(end_date)) {
       return handleError(res, "start_date must be earlier than end_date", 400);
     }
 
-    // Ensure terms start and end dates are valid
+    // Validate terms' start and end dates
     if (terms) {
       for (const term of terms) {
         if (new Date(term.start_date) >= new Date(term.end_date)) {
@@ -187,7 +167,7 @@ export const updateSessionWithTerms = async (
 
     const result = await prisma.$transaction(async (tx) => {
       if (isActive) {
-        // Deactivate any active session if new session is active
+        // Deactivate any active session if a new session is set to active
         await tx.session.updateMany({
           where: { isActive: true },
           data: { isActive: false },
@@ -196,7 +176,7 @@ export const updateSessionWithTerms = async (
 
       // Update the session
       const updatedSession = await tx.session.update({
-        where: { id: req.params.id },
+        where: { id: sessionId },
         data: {
           ...(label && { label }),
           ...(start_date && { start_date: new Date(start_date) }),
@@ -205,26 +185,26 @@ export const updateSessionWithTerms = async (
         },
       });
 
-      // Create or update terms for the session
+      // Update or create terms
       const updatedTerms = terms
         ? await Promise.all(
             terms.map((term) => {
               return tx.term.upsert({
                 where: {
-                  label_sessionId: {
-                    label: `${updatedSession.label} ${term.label}`,
-                    sessionId: updatedSession.id,
-                  },
+                  id: term.id || undefined,
                 },
                 create: {
                   sessionId: updatedSession.id,
                   label: term.label,
                   start_date: new Date(term.start_date),
                   end_date: new Date(term.end_date),
+                  isActive: term.isActive || false,
                 },
                 update: {
+                  label: term.label,
                   start_date: new Date(term.start_date),
                   end_date: new Date(term.end_date),
+                  isActive: term.isActive || false,
                 },
               });
             })
@@ -246,6 +226,8 @@ export const updateSessionWithTerms = async (
     next(error);
   }
 };
+
+
 
 // Delete Session
 export const deleteSession = async (
