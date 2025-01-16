@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import e, { NextFunction, Request, Response } from "express";
 import prisma from "../prisma";
 import { handleError } from "../error/errorHandler";
 import {
@@ -12,6 +12,7 @@ import {
   findClassWithSections,
 } from "../function/schoolFunctions";
 import { findStudent } from "../function/schoolFunctions";
+import _ from "lodash";
 
 // Enroll Student
 export const enrollStudent = async (
@@ -90,50 +91,38 @@ export const getStudentsBySchool = async (
     if (!schoolId) {
       return handleError(res, "School ID is required", 400);
     }
+    console.log({ admissionNumber, classId, name });
 
     // Build query filters
-    const filters: any = { schoolId };
+    const filters: any = {
+      schoolId,
+      user: {
+        student: {},
+      },
+    };
 
     if (classId) {
-      filters.user = {
-        student: {
-          student_enrolled: { some: { classId } },
+      filters.user.student.student_enrolled = {
+        some: {
+          classId,
         },
       };
     }
 
     if (name) {
-      filters.user = {
-        ...filters.user,
-        student: {
-          ...filters.user?.student,
-          name: { contains: name, mode: "insensitive" },
-        },
+      filters.user.student.name = {
+        contains: name,
+        mode: "insensitive",
       };
     }
 
     if (admissionNumber) {
-      filters.user = {
-        ...filters.user,
-        student: {
-          ...filters.user?.student,
-          admission_number: parseInt(admissionNumber, 10),
-        },
-      };
+      filters.user.student.admission_number = parseInt(admissionNumber, 10);
     }
 
     // Fetch students with related data
     const students = await prisma.userSchool.findMany({
-      where: {
-        schoolId,
-        user: {
-          student: {
-            student_enrolled: {
-              some: { class: { schoolId } },
-            },
-          },
-        },
-      },
+      where: filters,
       include: {
         school: true,
         user: {
@@ -141,7 +130,7 @@ export const getStudentsBySchool = async (
             student: {
               include: {
                 student_enrolled: {
-                  include: { class: true },
+                  include: { class: true, section: true },
                 },
               },
             },
@@ -150,10 +139,34 @@ export const getStudentsBySchool = async (
       },
     });
 
+    // Clean the data
+    const cleanedStudents = students.map((student) => {
+      return {
+        email: student.user.email,
+        username: student.user.username,
+        schoolId: student.schoolId,
+        schoolName: student.school.name,
+        role: student.role,
+        student: _.omit(student.user.student, [
+          "createdAt",
+          "updatedAt",
+          "userId",
+          "student_enrolled",
+        ]),
+        enrollment:
+          student.user.student?.student_enrolled
+            .filter((enrollment) => enrollment.status === "enrolled")
+            .map((enrollment) => ({
+              class: _.omit(enrollment.class, ["createdAt", "updatedAt"]),
+              section: _.omit(enrollment.section, ["createdAt", "updatedAt"]),
+            })) || [],
+      };
+    });
+
     res.status(200).json({
       success: true,
       message: "Students fetched successfully",
-      data: students,
+      data: cleanedStudents,
     });
   } catch (error) {
     next(error);
@@ -218,11 +231,29 @@ export const getStudentDetails = async (
       return handleError(res, "Student not found", 404);
     }
 
+    // Filter and map student enrollments
+    const enrollments = student.student_enrolled
+      .filter((enrollment) => enrollment.status === "enrolled")
+      .map((enrollment) => ({
+        class: enrollment.class.label,
+        section: enrollment.section.label,
+      }));
+
+    const data = {
+      student: _.omit(student, [
+        "createdAt",
+        "updatedAt",
+        "userId",
+        "student_enrolled",
+      ]),
+      enrollments,
+    };
+
     // Return the response
     res.status(200).json({
       success: true,
       message: "Student details fetched successfully",
-      data: student,
+      data,
     });
   } catch (error) {
     next(error);
@@ -257,7 +288,14 @@ export const promoteStudent = async (
         404
       );
     }
-
+    // Validate to class exists in the same school as the from class
+    if (fromClass.schoolId !== toClass.schoolId) {
+      return handleError(
+        res,
+        "Destination class must be in the same school",
+        400
+      );
+    }
     // Validate session and active term
     const session = await findActiveSession(res);
     if (!session) return;
