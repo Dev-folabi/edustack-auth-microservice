@@ -19,8 +19,8 @@ router.post("/enroll", validateEnrollStudent, enrollStudent);
 router.put("/promote", validatePromoteStudent, promoteStudent);
 router.put("/transfer", validateTransferStudent, transferStudent);
 
-router.get("/:schoolId/students", getStudentsBySchool);
 router.get("/:schoolId/transfer", getTransferStudentsBySchool);
+router.get("/:schoolId/:sessionId", getStudentsBySchool);
 router.get("/:studentId", getStudentDetails);
 
 export default router;
