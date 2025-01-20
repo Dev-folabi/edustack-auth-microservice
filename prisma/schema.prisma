@@ -40,7 +40,7 @@ model School {
   id            String            @id @default(cuid())
   name          String            @unique
   email         String
-  phone         String[]          
+  phone         String[]
   address       String
   userSchools   UserSchool[]
   classes       Classes[]
@@ -50,7 +50,6 @@ model School {
   fromTransfers StudentTransfer[] @relation("FromSchoolRelation")
   toTransfers   StudentTransfer[] @relation("ToSchoolRelation")
 }
-
 
 model UserSchool {
   id        String    @id @default(cuid())
@@ -195,6 +194,7 @@ model Classes {
   to_class_promotion_history   PromotionHistory[]  @relation("ToClassRelation")
   sections                     Class_Section[]
   schools                      School              @relation(fields: [schoolId], references: [id])
+  StudentTransfer              StudentTransfer[]
 
   @@unique([label, schoolId])
 }
@@ -208,10 +208,10 @@ model Class_Section {
 
   student_enrolled StudentEnrollment[]
   classes          Classes             @relation(fields: [classId], references: [id])
+  StudentTransfer  StudentTransfer[]
 
   @@unique([classId, label])
 }
-
 
 model StudentEnrollment {
   id        String       @id @default(cuid())
@@ -255,12 +255,16 @@ model StudentTransfer {
   studentId      String
   fromSchoolId   String
   toSchoolId     String
+  toClassId      String
+  toSectionId    String
   transferReason String?
   transferDate   DateTime @default(now())
   createdAt      DateTime @default(now())
 
   // Relations
-  student    Student @relation(fields: [studentId], references: [id])
-  fromSchool School  @relation("FromSchoolRelation", fields: [fromSchoolId], references: [id])
-  toSchool   School  @relation("ToSchoolRelation", fields: [toSchoolId], references: [id])
+  student    Student       @relation(fields: [studentId], references: [id])
+  fromSchool School        @relation("FromSchoolRelation", fields: [fromSchoolId], references: [id])
+  toSchool   School        @relation("ToSchoolRelation", fields: [toSchoolId], references: [id])
+  class      Classes       @relation(fields: [toClassId], references: [id])
+  section    Class_Section @relation(fields: [toSectionId], references: [id])
 }

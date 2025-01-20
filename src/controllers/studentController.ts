@@ -75,7 +75,7 @@ export const enrollStudent = async (
 // Get Students by School
 export const getStudentsBySchool = async (
   req: Request<
-    { schoolId: string },
+    { schoolId: string; sessionId: string },
     {},
     {},
     { classId?: string; name?: string; admissionNumber?: string }
@@ -84,18 +84,27 @@ export const getStudentsBySchool = async (
   next: NextFunction
 ) => {
   try {
-    const { schoolId } = req.params;
+    const { schoolId, sessionId } = req.params;
     const { classId, name, admissionNumber } = req.query;
+
+    if (
+      !schoolId ||
+      !sessionId ||
+      schoolId.trim() === ":schoolId" ||
+      sessionId.trim() === ":sessionId"
+    ) {
+      return handleError(res, "School ID and Session ID are required", 400);
+    }
 
     // Validate schoolId
     if (!schoolId) {
       return handleError(res, "School ID is required", 400);
     }
-    console.log({ admissionNumber, classId, name });
 
     // Build query filters
     const filters: any = {
       schoolId,
+      role: "student",
       user: {
         student: {},
       },
@@ -122,7 +131,19 @@ export const getStudentsBySchool = async (
 
     // Fetch students with related data
     const students = await prisma.userSchool.findMany({
-      where: filters,
+      where: {
+        ...filters,
+        user: {
+          student: {
+            student_enrolled: {
+              some: {
+                sessionId,
+                status: "enrolled",
+              },
+            },
+          },
+        },
+      },
       include: {
         school: true,
         user: {
@@ -319,7 +340,7 @@ export const promoteStudent = async (
     ) {
       return handleError(
         res,
-        "Promotion must be to a session ahead of the current session",
+        "Please activate next session, promotion must be to a session ahead, ",
         400
       );
     }
@@ -373,38 +394,97 @@ export const transferStudent = async (
   next: NextFunction
 ) => {
   try {
-    const { studentId, fromSchoolId, toSchoolId, transferReason } = req.body;
+    const { studentId, toSchoolId, toClassId, toSectionId, transferReason } =
+      req.body;
 
-    // Validate existence of students
+    // Validate students
     const students = await prisma.student.findMany({
       where: { id: { in: studentId } },
     });
     if (students.length !== studentId.length) {
-      handleError(res, "One or more students not found", 404);
+      return handleError(res, "One or more students not found", 404);
     }
 
-    // Validate existence of schools
-    const schools = await prisma.school.findMany({
-      where: { id: { in: [fromSchoolId, toSchoolId] } },
+    // Get from school
+    const fromSchoolEnrollment = await prisma.userSchool.findFirst({
+      where: {
+        userId: { in: studentId },
+        role: "student",
+      },
     });
+    if (!fromSchoolEnrollment) {
+      return handleError(
+        res,
+        "One or more students not associated with a school",
+        404
+      );
+    }
+    const fromSchoolId = fromSchoolEnrollment.schoolId;
+
+    // Validate schools, class, and section
+    const [schools, classes, sections] = await Promise.all([
+      prisma.school.findMany({
+        where: { id: { in: [fromSchoolId, toSchoolId] }, isActive: true },
+      }),
+      prisma.classes.findMany({ where: { id: toClassId } }),
+      prisma.class_Section.findMany({ where: { id: toSectionId } }),
+    ]);
+
     if (schools.length !== 2) {
-      handleError(res, "One or both schools not found", 404);
+      return handleError(res, "One or both schools not found or inactive", 404);
+    }
+    if (classes.length !== 1) {
+      return handleError(res, "Class not found", 404);
+    }
+    if (sections.length !== 1) {
+      return handleError(res, "Section not found", 404);
     }
 
-    // Perform transfer
-    const transfer = await prisma.studentTransfer.createMany({
-      data: studentId.map((id: string) => ({
-        studentId: id,
-        fromSchoolId,
-        toSchoolId,
-        transferReason: transferReason || undefined,
-        transferDate: new Date(),
-      })),
+    // Get active session and term
+    const session = await findActiveSession(res);
+    if (!session) return;
+
+    const termId = session.terms.find((term) => term.isActive)?.id;
+    if (!termId) {
+      return handleError(res, "No active term in session", 400);
+    }
+
+    // Perform transfer in transaction
+    const transferCount = await prisma.$transaction(async (tx) => {
+      await tx.studentEnrollment.updateMany({
+        where: { studentId: { in: studentId }, status: "enrolled" },
+        data: { status: "transferred" },
+      });
+
+      await tx.studentEnrollment.createMany({
+        data: studentId.map((id) => ({
+          studentId: id,
+          classId: toClassId,
+          sectionId: toSectionId,
+          sessionId: session.id,
+          termId,
+          status: "enrolled",
+        })),
+      });
+
+      const transfer = await tx.studentTransfer.createMany({
+        data: studentId.map((id) => ({
+          studentId: id,
+          fromSchoolId,
+          toSchoolId,
+          toClassId,
+          toSectionId,
+          transferReason: transferReason || undefined,
+          transferDate: new Date(),
+        })),
+      });
+
+      return transfer.count;
     });
 
     res.status(200).json({
       success: true,
-      message: `${transfer.count} student(s) transferred successfully`,
+      message: `${transferCount} student(s) transferred successfully`,
     });
   } catch (error) {
     next(error);

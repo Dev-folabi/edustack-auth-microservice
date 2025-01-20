@@ -125,8 +125,9 @@ export interface TransferStudentRequest {
   studentId: string[];
   fromSchoolId: string;
   toSchoolId: string;
+  toClassId: string;
+  toSectionId: string;
   transferReason?: string;
-  transferDate: Date;
 }
 
 export interface EnrollStudentRequest {
