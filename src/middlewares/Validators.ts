@@ -527,14 +527,14 @@ export const validateTransferStudent = [
     .withMessage("To school ID must be a string"),
   body("toClassId")
     .notEmpty()
-    .withMessage("From school ID is required")
+    .withMessage("To Class ID is required")
     .isString()
-    .withMessage("From school ID must be a string"),
+    .withMessage("To Class ID must be a string"),
   body("toSectionId")
     .notEmpty()
-    .withMessage("From school ID is required")
+    .withMessage("To Section ID is required")
     .isString()
-    .withMessage("From school ID must be a string"),
+    .withMessage("To Section ID must be a string"),
   body("transferReason")
     .optional()
     .isString()

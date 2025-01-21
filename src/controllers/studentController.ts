@@ -1,4 +1,4 @@
-import e, { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import prisma from "../prisma";
 import { handleError } from "../error/errorHandler";
 import {
@@ -13,7 +13,7 @@ import {
 } from "../function/schoolFunctions";
 import { findStudent } from "../function/schoolFunctions";
 import _ from "lodash";
-
+import { Prisma } from ".prisma/client";
 // Enroll Student
 export const enrollStudent = async (
   req: Request<{}, {}, EnrollStudentRequest>,
@@ -75,84 +75,60 @@ export const enrollStudent = async (
 // Get Students by School
 export const getStudentsBySchool = async (
   req: Request<
-    { schoolId: string; sessionId: string },
+    { schoolId: string },
     {},
     {},
-    { classId?: string; name?: string; admissionNumber?: string }
+    {
+      classId?: string;
+      name?: string;
+      admissionNumber?: string;
+      active?: string;
+    }
   >,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const { schoolId, sessionId } = req.params;
-    const { classId, name, admissionNumber } = req.query;
-
-    if (
-      !schoolId ||
-      !sessionId ||
-      schoolId.trim() === ":schoolId" ||
-      sessionId.trim() === ":sessionId"
-    ) {
-      return handleError(res, "School ID and Session ID are required", 400);
-    }
+    const { schoolId } = req.params;
+    const { classId, name, admissionNumber, active } = req.query;
 
     // Validate schoolId
-    if (!schoolId) {
+    if (!schoolId || schoolId.trim() === ":schoolId") {
       return handleError(res, "School ID is required", 400);
     }
 
     // Build query filters
-    const filters: any = {
+    const filters: Prisma.UserSchoolWhereInput = {
       schoolId,
       role: "student",
       user: {
-        student: {},
+        student: {
+          ...(classId && {
+            student_enrolled: {
+              some: {
+                classId: { equals: classId },
+              },
+            },
+          }),
+          ...(name && { name: { contains: name, mode: "insensitive" } }),
+          ...(admissionNumber && {
+            admission_number: parseInt(admissionNumber, 10),
+          }),
+          ...(active !== undefined && { isActive: active === "true" }),
+        },
       },
     };
 
-    if (classId) {
-      filters.user.student.student_enrolled = {
-        some: {
-          classId,
-        },
-      };
-    }
-
-    if (name) {
-      filters.user.student.name = {
-        contains: name,
-        mode: "insensitive",
-      };
-    }
-
-    if (admissionNumber) {
-      filters.user.student.admission_number = parseInt(admissionNumber, 10);
-    }
-
     // Fetch students with related data
     const students = await prisma.userSchool.findMany({
-      where: {
-        ...filters,
-        user: {
-          student: {
-            student_enrolled: {
-              some: {
-                sessionId,
-                status: "enrolled",
-              },
-            },
-          },
-        },
-      },
+      where: filters,
       include: {
         school: true,
         user: {
           include: {
             student: {
               include: {
-                student_enrolled: {
-                  include: { class: true, section: true },
-                },
+                student_enrolled: { include: { class: true, section: true } },
               },
             },
           },
@@ -160,29 +136,29 @@ export const getStudentsBySchool = async (
       },
     });
 
-    // Clean the data
-    const cleanedStudents = students.map((student) => {
-      return {
-        email: student.user.email,
-        username: student.user.username,
-        schoolId: student.schoolId,
-        schoolName: student.school.name,
-        role: student.role,
-        student: _.omit(student.user.student, [
-          "createdAt",
-          "updatedAt",
-          "userId",
-          "student_enrolled",
-        ]),
-        enrollment:
-          student.user.student?.student_enrolled
-            .filter((enrollment) => enrollment.status === "enrolled")
-            .map((enrollment) => ({
-              class: _.omit(enrollment.class, ["createdAt", "updatedAt"]),
-              section: _.omit(enrollment.section, ["createdAt", "updatedAt"]),
-            })) || [],
-      };
+    const cleanStudentData = (student: any) => ({
+      email: student.user.email,
+      username: student.user.username,
+      schoolId: student.schoolId,
+      schoolName: student.school.name,
+      role: student.role,
+      student: _.omit(student.user.student, [
+        "createdAt",
+        "updatedAt",
+        "userId",
+        "student_enrolled",
+      ]),
+      enrollment:
+        student.user.student?.student_enrolled
+          .filter((enrollment: any) => enrollment.status === "enrolled")
+          .map((enrollment: any) => ({
+            class: _.omit(enrollment.class, ["createdAt", "updatedAt"]),
+            section: _.omit(enrollment.section, ["createdAt", "updatedAt"]),
+          })) || [],
     });
+
+    // Clean the data
+    const cleanedStudents = students.map(cleanStudentData);
 
     res.status(200).json({
       success: true,
@@ -317,6 +293,7 @@ export const promoteStudent = async (
         400
       );
     }
+
     // Validate session and active term
     const session = await findActiveSession(res);
     if (!session) return;
@@ -388,6 +365,116 @@ export const promoteStudent = async (
 };
 
 // Transfer Student
+// export const transferStudent = async (
+//   req: Request<{}, {}, TransferStudentRequest>,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const { studentId, toSchoolId, toClassId, toSectionId, transferReason } =
+//       req.body;
+
+//     // Validate students
+//     const students = await prisma.student.findMany({
+//       where: { id: { in: studentId } },
+//     });
+//     if (students.length !== studentId.length) {
+//       return handleError(res, "One or more students not found", 404);
+//     }
+
+//     // Get from school
+//     const fromSchoolEnrollment = await prisma.student.findFirst({
+//       where: {
+//         id: { in: studentId },
+//       },
+//       include: {
+//         student_enrolled: {
+//           where: { status: "enrolled" },
+//           select: { class: { select: { schoolId: true } } },
+//         },
+//       },
+//     });
+
+//     if (!fromSchoolEnrollment) {
+//       return handleError(
+//         res,
+//         "One or more students not associated with a school",
+//         404
+//       );
+//     }
+
+//     const fromSchoolId = fromSchoolEnrollment.student_enrolled[0].class.schoolId;
+
+//     // Validate schools, class, and section
+//     const [schools, classes, sections] = await Promise.all([
+//       prisma.school.findMany({
+//         where: { id: { in: [fromSchoolId, toSchoolId] }, isActive: true },
+//       }),
+//       prisma.classes.findMany({ where: { id: toClassId } }),
+//       prisma.class_Section.findMany({ where: { id: toSectionId } }),
+//     ]);
+
+//     if (schools.length !== 2) {
+//       return handleError(res, "One or both schools not found or inactive", 404);
+//     }
+//     if (classes.length !== 1) {
+//       return handleError(res, "Class not found", 404);
+//     }
+//     if (sections.length !== 1) {
+//       return handleError(res, "Section not found", 404);
+//     }
+
+//     // Get active session and term
+//     const session = await findActiveSession(res);
+//     if (!session) return;
+
+//     const termId = session.terms.find((term) => term.isActive)?.id;
+//     if (!termId) {
+//       return handleError(res, "No active term in session", 400);
+//     }
+
+//     // Perform transfer in transaction
+//     const transferCount = await prisma.$transaction(async (tx) => {
+//       await tx.studentEnrollment.updateMany({
+//         where: { studentId: { in: studentId }, status: "enrolled" },
+//         data: { status: "transferred" },
+//       });
+
+//       await tx.studentEnrollment.createMany({
+//         data: studentId.map((id) => ({
+//           studentId: id,
+//           classId: toClassId,
+//           sectionId: toSectionId,
+//           sessionId: session.id,
+//           termId,
+//           status: "enrolled",
+//         })),
+//       });
+
+//       const transfer = await tx.studentTransfer.createMany({
+//         data: studentId.map((id) => ({
+//           studentId: id,
+//           fromSchoolId,
+//           toSchoolId,
+//           toClassId,
+//           toSectionId,
+//           transferReason: transferReason || undefined,
+//           transferDate: new Date(),
+//         })),
+//       });
+
+//       return transfer.count;
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       message: `${transferCount} student(s) transferred successfully`,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
 export const transferStudent = async (
   req: Request<{}, {}, TransferStudentRequest>,
   res: Response,
@@ -396,6 +483,22 @@ export const transferStudent = async (
   try {
     const { studentId, toSchoolId, toClassId, toSectionId, transferReason } =
       req.body;
+
+    // Validate input
+    if (!studentId || !Array.isArray(studentId) || studentId.length === 0) {
+      return handleError(
+        res,
+        "Student ID(s) are required and must be an array",
+        400
+      );
+    }
+    if (!toSchoolId || !toClassId || !toSectionId) {
+      return handleError(
+        res,
+        "Target school, class, and section are required",
+        400
+      );
+    }
 
     // Validate students
     const students = await prisma.student.findMany({
@@ -406,38 +509,47 @@ export const transferStudent = async (
     }
 
     // Get from school
-    const fromSchoolEnrollment = await prisma.userSchool.findFirst({
-      where: {
-        userId: { in: studentId },
-        role: "student",
+    const fromSchoolEnrollment = await prisma.student.findFirst({
+      where: { id: { in: studentId } },
+      include: {
+        student_enrolled: {
+          where: { status: "enrolled" },
+          select: { class: { select: { schoolId: true } } },
+        },
       },
     });
-    if (!fromSchoolEnrollment) {
+
+    if (
+      !fromSchoolEnrollment ||
+      !fromSchoolEnrollment.student_enrolled.length
+    ) {
       return handleError(
         res,
         "One or more students not associated with a school",
         404
       );
     }
-    const fromSchoolId = fromSchoolEnrollment.schoolId;
+
+    const fromSchoolId =
+      fromSchoolEnrollment.student_enrolled[0].class.schoolId;
 
     // Validate schools, class, and section
     const [schools, classes, sections] = await Promise.all([
       prisma.school.findMany({
         where: { id: { in: [fromSchoolId, toSchoolId] }, isActive: true },
       }),
-      prisma.classes.findMany({ where: { id: toClassId } }),
-      prisma.class_Section.findMany({ where: { id: toSectionId } }),
+      prisma.classes.findUnique({ where: { id: toClassId } }),
+      prisma.class_Section.findUnique({ where: { id: toSectionId } }),
     ]);
 
     if (schools.length !== 2) {
       return handleError(res, "One or both schools not found or inactive", 404);
     }
-    if (classes.length !== 1) {
-      return handleError(res, "Class not found", 404);
+    if (!classes) {
+      return handleError(res, "Target class not found", 404);
     }
-    if (sections.length !== 1) {
-      return handleError(res, "Section not found", 404);
+    if (!sections) {
+      return handleError(res, "Target section not found", 404);
     }
 
     // Get active session and term
@@ -487,6 +599,7 @@ export const transferStudent = async (
       message: `${transferCount} student(s) transferred successfully`,
     });
   } catch (error) {
+    console.error("Error transferring students:", error);
     next(error);
   }
 };
